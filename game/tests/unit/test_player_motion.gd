@@ -77,3 +77,23 @@ func test_stale_press_does_not_fire() -> bool:
 
 func test_jump_rejected_when_already_spent() -> bool:
 	return not PlayerMotion.should_jump(0.0, 0.12, 0.0, 0.12, true)
+
+
+func test_climb_forward_input_goes_up() -> bool:
+	var v := PlayerMotion.climb_velocity(Vector2(0, -1), Vector3.ZERO, 3.0)
+	return v.is_equal_approx(Vector3(0, 3, 0))
+
+
+func test_climb_back_input_goes_down() -> bool:
+	var v := PlayerMotion.climb_velocity(Vector2(0, 1), Vector3.ZERO, 3.0)
+	return v.is_equal_approx(Vector3(0, -3, 0))
+
+
+func test_climb_without_vertical_input_hangs() -> bool:
+	var v := PlayerMotion.climb_velocity(Vector2.ZERO, Vector3.ZERO, 3.0)
+	return v.is_equal_approx(Vector3.ZERO)
+
+
+func test_climb_keeps_half_speed_lateral_steering() -> bool:
+	var v := PlayerMotion.climb_velocity(Vector2.ZERO, Vector3(1, 0, 0), 3.0)
+	return v.is_equal_approx(Vector3(1.5, 0, 0))

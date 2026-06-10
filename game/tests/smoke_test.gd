@@ -1,50 +1,67 @@
 extends SceneTree
-## Headless boot test: the main scene must instantiate and contain a working
-## player rig. Run via:
+## Headless boot test: every world scene must instantiate and contain a
+## working player rig. Run via:
 ##   godot --headless --path game --script res://tests/smoke_test.gd
 ##
 ## This is the "main stays playable" gate — if this fails, a clone won't run.
-## Checks run on the first process frame: during _initialize the root is not
-## live yet, so nodes haven't registered their groups with the tree.
+## Scenes are booted one per frame: group registration needs the node to be
+## in the live tree, so each scene is added on one frame and checked on the
+## next, then freed before the next scene loads.
 
-const MAIN_SCENE: String = "res://scenes/world/sandbox.tscn"
+const SCENES: PackedStringArray = [
+	"res://scenes/world/sandbox.tscn",
+	"res://scenes/world/playground.tscn",
+]
 
-var _checked := false
-
-
-func _initialize() -> void:
-	var packed: PackedScene = load(MAIN_SCENE)
-	if packed == null:
-		push_error("smoke test: main scene failed to load: %s" % MAIN_SCENE)
-		quit(1)
-		return
-	root.add_child(packed.instantiate())
+var _index: int = -1
+var _current: Node = null
+var _failures: PackedStringArray = []
 
 
 func _process(_delta: float) -> bool:
-	if _checked:
-		return true
-	_checked = true
+	if _index >= 0 and _current != null:
+		_check_scene(SCENES[_index])
+		_current.free()
+		_current = null
 
-	var failures: PackedStringArray = []
+	_index += 1
+	if _index >= SCENES.size() or not _failures.is_empty():
+		return _finish()
+
+	var packed: PackedScene = load(SCENES[_index])
+	if packed == null:
+		_failures.append("scene failed to load: %s" % SCENES[_index])
+		return _finish()
+	_current = packed.instantiate()
+	root.add_child(_current)
+	return false
+
+
+func _check_scene(scene_path: String) -> void:
 	var players := get_nodes_in_group("player")
 	if players.size() != 1:
-		failures.append("expected exactly 1 node in group 'player', found %d" % players.size())
+		_fail(scene_path, "expected exactly 1 node in group 'player', found %d" % players.size())
 	elif players[0] is not CharacterBody3D:
-		failures.append("player root is not a CharacterBody3D")
+		_fail(scene_path, "player root is not a CharacterBody3D")
 	elif (players[0] as Node).find_children("*", "Camera3D", true).is_empty():
-		failures.append("player has no Camera3D")
+		_fail(scene_path, "player has no Camera3D")
 
 	if get_nodes_in_group("world").is_empty():
-		failures.append("no node in group 'world'")
+		_fail(scene_path, "no node in group 'world'")
 	if get_nodes_in_group("spawn_points").is_empty():
-		failures.append("no spawn points (Marker3D in group 'spawn_points')")
+		_fail(scene_path, "no spawn points (Marker3D in group 'spawn_points')")
 
-	if failures.is_empty():
-		print("smoke test: OK")
+
+func _fail(scene_path: String, message: String) -> void:
+	_failures.append("%s: %s" % [scene_path, message])
+
+
+func _finish() -> bool:
+	if _failures.is_empty():
+		print("smoke test: OK (%d scenes)" % SCENES.size())
 		quit(0)
 	else:
-		for failure in failures:
+		for failure in _failures:
 			push_error("smoke test: %s" % failure)
 		quit(1)
-	return false
+	return true

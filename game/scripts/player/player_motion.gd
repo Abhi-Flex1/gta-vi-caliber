@@ -58,3 +58,12 @@ static func should_jump(
 	if jump_spent:
 		return false
 	return time_since_grounded <= coyote_time and time_since_jump_pressed <= buffer_time
+
+
+## Velocity while latched to a ladder: forward input climbs, back input
+## descends, and the world-space move direction is kept at half speed so the
+## player can steer off the ladder sideways or over the top lip.
+static func climb_velocity(input_dir: Vector2, direction: Vector3, climb_speed: float) -> Vector3:
+	return Vector3(
+		direction.x * climb_speed * 0.5, -input_dir.y * climb_speed, direction.z * climb_speed * 0.5
+	)

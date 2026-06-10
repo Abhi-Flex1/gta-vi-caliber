@@ -30,7 +30,7 @@ Goal: moving around is *fun* before there is anything to do.
 - [x] Acceleration/deceleration curves, air control, coyote time (+ jump buffering)
 - [x] Camera: collision probe, shoulder offset, FOV kick on sprint
 - [ ] Footstep audio hooked to surface type
-- [ ] Greybox "movement playground" scene with stairs, slopes, gaps, ladders
+- [x] Greybox "movement playground" scene with stairs, slopes, gaps, ladders
 - [ ] Gamepad support + rebindable input
 
 ## M2 — Vehicles

@@ -14,6 +14,7 @@ extends CharacterBody3D
 @export var jump_velocity: float = 4.8
 @export var coyote_time: float = 0.12
 @export var jump_buffer_time: float = 0.12
+@export var climb_speed: float = 3.0
 
 var _time_since_grounded: float = 0.0
 var _time_since_jump_pressed: float = 1.0
@@ -33,6 +34,14 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _physics_process(delta: float) -> void:
 	_update_jump_timers(delta)
+	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	var direction := PlayerMotion.direction_from_input(input_dir, _camera_rig.global_rotation.y)
+
+	if _is_on_ladder() and (input_dir.y < 0.0 or not is_on_floor()):
+		velocity = PlayerMotion.climb_velocity(input_dir, direction, climb_speed)
+		move_and_slide()
+		return
+
 	if not is_on_floor():
 		velocity += get_gravity() * delta
 	if PlayerMotion.should_jump(
@@ -42,8 +51,6 @@ func _physics_process(delta: float) -> void:
 		_jump_spent = true
 		_time_since_jump_pressed = jump_buffer_time + 1.0
 
-	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
-	var direction := PlayerMotion.direction_from_input(input_dir, _camera_rig.global_rotation.y)
 	var speed := sprint_speed if Input.is_action_pressed("sprint") else walk_speed
 	var target := PlayerMotion.horizontal_velocity(direction, speed)
 	var rate := PlayerMotion.acceleration_rate(
@@ -51,6 +58,14 @@ func _physics_process(delta: float) -> void:
 	)
 	velocity = PlayerMotion.accelerated(velocity, target, rate, delta)
 	move_and_slide()
+
+
+func _is_on_ladder() -> bool:
+	for ladder in get_tree().get_nodes_in_group("ladders"):
+		var area := ladder as Area3D
+		if area != null and area.overlaps_body(self):
+			return true
+	return false
 
 
 func _update_jump_timers(delta: float) -> void:
