@@ -28,7 +28,7 @@ Goal: moving around is *fun* before there is anything to do.
 
 - [ ] Character model + run/walk/idle/jump animations (original or CC0; see `art` issues)
 - [x] Acceleration/deceleration curves, air control, coyote time (+ jump buffering)
-- [ ] Camera: collision probe, shoulder offset, FOV kick on sprint
+- [x] Camera: collision probe, shoulder offset, FOV kick on sprint
 - [ ] Footstep audio hooked to surface type
 - [ ] Greybox "movement playground" scene with stairs, slopes, gaps, ladders
 - [ ] Gamepad support + rebindable input
