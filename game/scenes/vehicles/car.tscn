@@ -1,6 +1,7 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://scripts/vehicles/car.gd" id="1_car"]
+[ext_resource type="Script" path="res://scripts/camera/chase_camera.gd" id="2_chase"]
 
 [sub_resource type="StandardMaterial3D" id="body_mat"]
 albedo_color = Color(0.75, 0.2, 0.15, 1)
@@ -107,6 +108,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.8, 0.6, 0)
 
 [node name="CameraPivot" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, 0)
+script = ExtResource("2_chase")
 
 [node name="SpringArm" type="SpringArm3D" parent="CameraPivot"]
 transform = Transform3D(1, 0, 0, 0, 0.965926, 0.258819, 0, -0.258819, 0.965926, 0, 0, 0)
