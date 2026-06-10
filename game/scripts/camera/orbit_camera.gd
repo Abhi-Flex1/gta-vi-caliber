@@ -32,12 +32,12 @@ const PITCH_MAX: float = 0.5
 ## How fast a recoil kick eases back to zero (1/s).
 @export var recoil_recovery: float = 9.0
 
-@onready var _arm: SpringArm3D = $SpringArm
-@onready var _camera: Camera3D = $SpringArm/Camera
-
 var _pitch: float = 0.0
 var _recoil: float = 0.0
 var _aiming: bool = false
+
+@onready var _arm: SpringArm3D = $SpringArm
+@onready var _camera: Camera3D = $SpringArm/Camera
 
 
 func _ready() -> void:
