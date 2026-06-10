@@ -41,7 +41,7 @@ Goal: get in a car, drive it, crash it, get out.
 - [x] Seamless enter/exit interaction
 - [x] Chase camera with speed-based FOV and look-behind
 - [ ] Engine/tire/impact audio loops
-- [ ] Damage model v1 (visual deformation can wait; mechanical state first)
+- [x] Damage model v1 (visual deformation can wait; mechanical state first)
 - [ ] Motorbike + boat prototypes
 
 ## M3 — Streaming world foundation *(engine track begins)*
