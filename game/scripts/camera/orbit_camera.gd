@@ -29,6 +29,11 @@ func _ready() -> void:
 	_camera.fov = base_fov
 
 
+## Re-activate this rig's camera (e.g. after stepping out of a vehicle).
+func make_current() -> void:
+	_camera.current = true
+
+
 func _physics_process(delta: float) -> void:
 	var body := get_parent() as CharacterBody3D
 	if body == null:

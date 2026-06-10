@@ -4,7 +4,7 @@ extends CanvasLayer
 ##
 ## UI observes and emits — it must never drive gameplay (docs/ARCHITECTURE.md).
 
-const HINTS: String = "WASD move · Shift sprint · Space jump · mouse look · Esc cursor"
+const HINTS: String = "WASD move · Shift sprint · Space jump/brake · E enter/exit car · mouse look · Esc cursor"
 
 @onready var _label: Label = $InfoLabel
 

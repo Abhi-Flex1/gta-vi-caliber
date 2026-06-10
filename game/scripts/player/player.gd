@@ -15,10 +15,13 @@ extends CharacterBody3D
 @export var coyote_time: float = 0.12
 @export var jump_buffer_time: float = 0.12
 @export var climb_speed: float = 3.0
+## How close (m) a vehicle must be for the interact key to enter it.
+@export var enter_vehicle_range: float = 3.5
 
 var _time_since_grounded: float = 0.0
 var _time_since_jump_pressed: float = 1.0
 var _jump_spent: bool = false
+var _vehicle: Car = null
 
 @onready var _camera_rig: OrbitCamera = $CameraRig
 
@@ -30,9 +33,15 @@ func _ready() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
 		_toggle_mouse_capture()
+	elif event.is_action_pressed("interact"):
+		_toggle_vehicle()
 
 
 func _physics_process(delta: float) -> void:
+	if _vehicle != null:
+		global_position = _vehicle.global_position
+		return
+
 	_update_jump_timers(delta)
 	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var direction := PlayerMotion.direction_from_input(input_dir, _camera_rig.global_rotation.y)
@@ -66,6 +75,48 @@ func _is_on_ladder() -> bool:
 		if area != null and area.overlaps_body(self):
 			return true
 	return false
+
+
+func _toggle_vehicle() -> void:
+	if _vehicle != null:
+		_exit_vehicle()
+		return
+	var car := _nearest_vehicle()
+	if car != null and not car.has_driver():
+		_enter_vehicle(car)
+
+
+func _enter_vehicle(car: Car) -> void:
+	_vehicle = car
+	velocity = Vector3.ZERO
+	visible = false
+	collision_layer = 0
+	collision_mask = 0
+	car.enter(self)
+
+
+func _exit_vehicle() -> void:
+	global_position = _vehicle.exit()
+	_vehicle = null
+	velocity = Vector3.ZERO
+	visible = true
+	collision_layer = 2
+	collision_mask = 1
+	_camera_rig.make_current()
+
+
+func _nearest_vehicle() -> Car:
+	var best: Car = null
+	var best_distance := enter_vehicle_range
+	for vehicle in get_tree().get_nodes_in_group("vehicles"):
+		var car := vehicle as Car
+		if car == null:
+			continue
+		var distance := global_position.distance_to(car.global_position)
+		if distance <= best_distance:
+			best = car
+			best_distance = distance
+	return best
 
 
 func _update_jump_timers(delta: float) -> void:

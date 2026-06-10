@@ -37,8 +37,8 @@ Goal: moving around is *fun* before there is anything to do.
 
 Goal: get in a car, drive it, crash it, get out.
 
-- [ ] `VehicleBody3D`-based car with tuned suspension (greybox body)
-- [ ] Seamless enter/exit interaction
+- [x] `VehicleBody3D`-based car with tuned suspension (greybox body)
+- [x] Seamless enter/exit interaction
 - [ ] Chase camera with speed-based FOV and look-behind
 - [ ] Engine/tire/impact audio loops
 - [ ] Damage model v1 (visual deformation can wait; mechanical state first)
