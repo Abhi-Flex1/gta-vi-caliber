@@ -52,3 +52,15 @@ static func look_delta(
 	raw: Vector2, deadzone: float, exponent: float, sensitivity: float, delta: float
 ) -> Vector2:
 	return conditioned(raw, deadzone, exponent) * sensitivity * delta
+
+
+## Merge keyboard movement (already a unit-clamped Vector2 from Input.get_vector)
+## with a raw left-stick vector: condition the stick, then take whichever source
+## is pushing harder so digital keys and the analog stick coexist without
+## summing into a >1 magnitude. Result magnitude is clamped to 1.
+static func movement(
+	keys: Vector2, raw_stick: Vector2, deadzone: float, exponent: float
+) -> Vector2:
+	var stick := conditioned(raw_stick, deadzone, exponent)
+	var dominant := keys if keys.length() >= stick.length() else stick
+	return dominant.limit_length(1.0)

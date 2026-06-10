@@ -17,6 +17,10 @@ extends CharacterBody3D
 @export var climb_speed: float = 3.0
 ## How close (m) a vehicle must be for the interact key to enter it.
 @export var enter_vehicle_range: float = 3.5
+## Gamepad left-stick conditioning for analog walking, merged with the keyboard
+## move vector via StickInput.movement (the harder-pushed source wins).
+@export_range(0.0, 0.9) var move_stick_deadzone: float = 0.2
+@export_range(1.0, 4.0) var move_stick_exponent: float = 1.6
 
 var _time_since_grounded: float = 0.0
 var _time_since_jump_pressed: float = 1.0
@@ -44,7 +48,11 @@ func _physics_process(delta: float) -> void:
 		return
 
 	_update_jump_timers(delta)
-	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	var keys := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	var stick := Vector2(
+		Input.get_joy_axis(0, JOY_AXIS_LEFT_X), Input.get_joy_axis(0, JOY_AXIS_LEFT_Y)
+	)
+	var input_dir := StickInput.movement(keys, stick, move_stick_deadzone, move_stick_exponent)
 	var direction := PlayerMotion.direction_from_input(input_dir, _camera_rig.global_rotation.y)
 
 	if _is_on_ladder() and (input_dir.y < 0.0 or not is_on_floor()):

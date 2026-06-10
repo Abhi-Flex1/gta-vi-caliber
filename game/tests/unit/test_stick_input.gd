@@ -63,3 +63,31 @@ func test_look_delta_scales_with_delta() -> bool:
 
 func test_look_delta_zero_inside_deadzone() -> bool:
 	return StickInput.look_delta(Vector2(0.05, 0.05), 0.2, 1.5, 2.0, 0.016) == Vector2.ZERO
+
+
+func test_movement_keyboard_only_passthrough() -> bool:
+	var keys := Vector2(1.0, 0.0)
+	return StickInput.movement(keys, Vector2.ZERO, 0.2, 1.8).is_equal_approx(keys)
+
+
+func test_movement_stick_only_when_no_keys() -> bool:
+	# Full left deflection, no keys: output points left at near-unit magnitude.
+	var out := StickInput.movement(Vector2.ZERO, Vector2(-1.0, 0.0), 0.2, 1.0)
+	return out.x < -0.99 and absf(out.y) < 0.0001
+
+
+func test_movement_stick_in_deadzone_yields_keys() -> bool:
+	var keys := Vector2(0.0, -1.0)
+	var out := StickInput.movement(keys, Vector2(0.05, 0.05), 0.2, 1.8)
+	return out.is_equal_approx(keys)
+
+
+func test_movement_takes_stronger_source() -> bool:
+	# Weak keys vs full stick: the stick (stronger) wins.
+	var out := StickInput.movement(Vector2(0.3, 0.0), Vector2(0.0, -1.0), 0.15, 1.0)
+	return out.y < -0.9 and absf(out.x) < 0.0001
+
+
+func test_movement_never_exceeds_unit_magnitude() -> bool:
+	var out := StickInput.movement(Vector2(1.0, 0.0), Vector2(-1.0, 1.0), 0.15, 1.0)
+	return out.length() <= 1.0 + 0.0001
