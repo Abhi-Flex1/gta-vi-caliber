@@ -40,3 +40,40 @@ func test_accelerated_reaches_target_eventually() -> bool:
 	for _i in range(100):
 		current = PlayerMotion.accelerated(current, target, 30.0, 0.016)
 	return current.is_equal_approx(target)
+
+
+func test_acceleration_rate_brakes_with_decel_when_no_input() -> bool:
+	return PlayerMotion.acceleration_rate(false, true, 30.0, 45.0, 0.35) == 45.0
+
+
+func test_acceleration_rate_uses_accel_with_input() -> bool:
+	return PlayerMotion.acceleration_rate(true, true, 30.0, 45.0, 0.35) == 30.0
+
+
+func test_acceleration_rate_is_scaled_in_air() -> bool:
+	var rate := PlayerMotion.acceleration_rate(true, false, 30.0, 45.0, 0.35)
+	return absf(rate - 10.5) < 0.0001
+
+
+func test_jump_fires_on_floor_with_fresh_press() -> bool:
+	return PlayerMotion.should_jump(0.0, 0.12, 0.0, 0.12, false)
+
+
+func test_jump_fires_within_coyote_window() -> bool:
+	return PlayerMotion.should_jump(0.1, 0.12, 0.0, 0.12, false)
+
+
+func test_jump_rejected_after_coyote_expires() -> bool:
+	return not PlayerMotion.should_jump(0.2, 0.12, 0.0, 0.12, false)
+
+
+func test_buffered_press_fires_on_landing() -> bool:
+	return PlayerMotion.should_jump(0.0, 0.12, 0.08, 0.12, false)
+
+
+func test_stale_press_does_not_fire() -> bool:
+	return not PlayerMotion.should_jump(0.0, 0.12, 0.5, 0.12, false)
+
+
+func test_jump_rejected_when_already_spent() -> bool:
+	return not PlayerMotion.should_jump(0.0, 0.12, 0.0, 0.12, true)

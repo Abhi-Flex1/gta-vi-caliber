@@ -30,3 +30,31 @@ static func accelerated(
 		current.y,
 		move_toward(current.z, target.z, acceleration * delta)
 	)
+
+
+## Pick this frame's acceleration rate: speeding up and braking use separate
+## rates (braking is stronger, so stops feel crisp), and both are scaled by
+## air_control while airborne so jumps keep their momentum.
+static func acceleration_rate(
+	has_input: bool, on_floor: bool, accel: float, decel: float, air_control: float
+) -> float:
+	var rate := accel if has_input else decel
+	if not on_floor:
+		rate *= air_control
+	return rate
+
+
+## Whether a jump should fire this frame. Combines coyote time (a late press
+## shortly after walking off a ledge still counts) with jump buffering (an
+## early press shortly before landing still counts). jump_spent guards
+## against double-firing until the character touches the floor again.
+static func should_jump(
+	time_since_grounded: float,
+	coyote_time: float,
+	time_since_jump_pressed: float,
+	buffer_time: float,
+	jump_spent: bool
+) -> bool:
+	if jump_spent:
+		return false
+	return time_since_grounded <= coyote_time and time_since_jump_pressed <= buffer_time
