@@ -40,3 +40,23 @@ func test_steer_target_scales_input() -> bool:
 
 func test_steer_target_clamps_input() -> bool:
 	return absf(VehicleMotion.steer_target(3.0, 0.0, 0.55, 12.0) - 0.55) < 0.0001
+
+
+func test_upright_torque_opposes_tilt() -> bool:
+	# Tilted positive with no roll rate: torque must push negative.
+	return VehicleMotion.upright_torque(0.5, 0.0, 90.0, 12.0) < 0.0
+
+
+func test_upright_torque_damps_roll_rate() -> bool:
+	# Upright but rolling: torque must oppose the roll.
+	return VehicleMotion.upright_torque(0.0, 2.0, 90.0, 12.0) < 0.0
+
+
+func test_upright_torque_is_zero_at_rest_upright() -> bool:
+	return VehicleMotion.upright_torque(0.0, 0.0, 90.0, 12.0) == 0.0
+
+
+func test_upright_torque_scales_with_stiffness() -> bool:
+	var soft := VehicleMotion.upright_torque(0.5, 0.0, 45.0, 12.0)
+	var stiff := VehicleMotion.upright_torque(0.5, 0.0, 90.0, 12.0)
+	return absf(stiff - 2.0 * soft) < 0.0001

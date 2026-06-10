@@ -30,3 +30,12 @@ static func steer_target(
 	input: float, speed: float, max_steer: float, falloff_speed: float
 ) -> float:
 	return clampf(input, -1.0, 1.0) * steer_limit(speed, max_steer, falloff_speed)
+
+
+## PD-controller torque that rights a two-wheeler: pushes against the tilt
+## error (spring toward upright/lean target) and against the roll rate
+## (damping, so it settles instead of wobbling).
+static func upright_torque(
+	tilt_error: float, roll_rate: float, stiffness: float, damping: float
+) -> float:
+	return -stiffness * tilt_error - damping * roll_rate
