@@ -1,0 +1,88 @@
+class_name Locomotion
+extends RefCounted
+## Pure locomotion-animation math for the character.
+##
+## Static functions only, no scene access (docs/ARCHITECTURE.md). Turns raw
+## motion (planar speed, grounded flag, vertical velocity) into an animation
+## state plus the procedural parameters a greybox rig needs to *look* like it
+## is walking: a 1D move blend, a stride phase that advances with distance, and
+## the limb-swing / vertical-bob / lean derived from it. Covered by
+## tests/unit/test_locomotion.gd.
+
+enum State { IDLE, WALK, RUN, JUMP, FALL, CLIMB }
+
+## Below this planar speed (m/s) the character is considered standing still.
+const IDLE_SPEED_EPSILON: float = 0.15
+## Stride cycles per metre travelled at a walk; scaled up toward a run so feet
+## visibly quicken with speed rather than sliding. Tuned for a 1.8 m capsule.
+const STRIDE_CYCLES_PER_METRE: float = 0.45
+
+
+## Classify the current motion. Climbing and airborne states take priority over
+## ground locomotion; on the ground the planar speed picks idle/walk/run with a
+## small tolerance band around walk_speed so a steady walk doesn't flicker into
+## run on minor overshoot.
+static func state_for(
+	planar_speed: float,
+	on_floor: bool,
+	vertical_velocity: float,
+	is_climbing: bool,
+	walk_speed: float,
+	run_speed: float
+) -> State:
+	if is_climbing:
+		return State.CLIMB
+	if not on_floor:
+		return State.JUMP if vertical_velocity > 0.0 else State.FALL
+	if planar_speed < IDLE_SPEED_EPSILON:
+		return State.IDLE
+	var run_gate: float = lerpf(walk_speed, run_speed, 0.5)
+	return State.RUN if planar_speed > run_gate else State.WALK
+
+
+## Position on a 1D idle→walk→run blend axis: 0.0 standing, 0.5 at walk_speed,
+## 1.0 at run_speed, linear and clamped between. This is the value you feed a
+## Godot AnimationTree BlendSpace1D once real clips exist; today it also scales
+## the procedural swing amplitude.
+static func move_blend(planar_speed: float, walk_speed: float, run_speed: float) -> float:
+	if planar_speed <= 0.0:
+		return 0.0
+	if planar_speed <= walk_speed:
+		return 0.5 * (planar_speed / walk_speed)
+	if planar_speed >= run_speed:
+		return 1.0
+	var t: float = (planar_speed - walk_speed) / (run_speed - walk_speed)
+	return 0.5 + 0.5 * t
+
+
+## Advance the stride phase (radians, wrapped to TAU). Phase accumulates with
+## distance travelled — not raw time — so steps stay locked to the ground at any
+## speed and the character never moonwalks. One full TAU cycle = a left+right
+## stride pair.
+static func advance_phase(phase: float, planar_speed: float, delta: float) -> float:
+	var advance: float = planar_speed * delta * STRIDE_CYCLES_PER_METRE * TAU
+	return fposmod(phase + advance, TAU)
+
+
+## Swing angle (radians) for a limb at the given stride phase. The opposite
+## limb in a pair passes phase + PI so arms/legs counter-swing. Amplitude is
+## the peak angle; pass it pre-scaled by move_blend so a slow walk swings less
+## than a sprint.
+static func limb_swing(phase: float, amplitude: float) -> float:
+	return sin(phase) * amplitude
+
+
+## Vertical bob (metres) of the torso. The body rises on each foot plant, so it
+## oscillates at twice the stride frequency; abs() keeps it a downward dip from
+## the rest pose rather than sinking below the feet.
+static func vertical_bob(phase: float, amplitude: float) -> float:
+	return -absf(sin(phase)) * amplitude
+
+
+## Forward lean (radians) into acceleration: lean grows with how hard speed is
+## changing, clamped to max_lean, so the body pitches forward when breaking into
+## a run and rocks back when braking. accel is signed planar acceleration.
+static func lean_angle(accel: float, accel_reference: float, max_lean: float) -> float:
+	if accel_reference <= 0.0:
+		return 0.0
+	return clampf(accel / accel_reference, -1.0, 1.0) * max_lean

@@ -21,9 +21,10 @@ extends CharacterBody3D
 var _time_since_grounded: float = 0.0
 var _time_since_jump_pressed: float = 1.0
 var _jump_spent: bool = false
-var _vehicle: Car = null
+var _vehicle: Node3D = null
 
 @onready var _camera_rig: OrbitCamera = $CameraRig
+@onready var _rig: CharacterAnimator = $Rig
 
 
 func _ready() -> void:
@@ -49,6 +50,7 @@ func _physics_process(delta: float) -> void:
 	if _is_on_ladder() and (input_dir.y < 0.0 or not is_on_floor()):
 		velocity = PlayerMotion.climb_velocity(input_dir, direction, climb_speed)
 		move_and_slide()
+		_drive_rig(delta, true)
 		return
 
 	if not is_on_floor():
@@ -67,6 +69,14 @@ func _physics_process(delta: float) -> void:
 	)
 	velocity = PlayerMotion.accelerated(velocity, target, rate, delta)
 	move_and_slide()
+	_drive_rig(delta, false)
+
+
+## Feed the procedural animator this frame's motion. Called after move_and_slide
+## so velocity reflects collisions; the planar component drives swing and facing.
+func _drive_rig(delta: float, is_climbing: bool) -> void:
+	var planar := Vector3(velocity.x, 0.0, velocity.z)
+	_rig.animate(planar, is_on_floor(), velocity.y, is_climbing, delta)
 
 
 func _is_on_ladder() -> bool:
@@ -81,18 +91,18 @@ func _toggle_vehicle() -> void:
 	if _vehicle != null:
 		_exit_vehicle()
 		return
-	var car := _nearest_vehicle()
-	if car != null and not car.has_driver():
-		_enter_vehicle(car)
+	var vehicle := _nearest_vehicle()
+	if vehicle != null and not vehicle.has_driver():
+		_enter_vehicle(vehicle)
 
 
-func _enter_vehicle(car: Car) -> void:
-	_vehicle = car
+func _enter_vehicle(vehicle: Node3D) -> void:
+	_vehicle = vehicle
 	velocity = Vector3.ZERO
 	visible = false
 	collision_layer = 0
 	collision_mask = 0
-	car.enter(self)
+	vehicle.enter(self)
 
 
 func _exit_vehicle() -> void:
@@ -105,16 +115,18 @@ func _exit_vehicle() -> void:
 	_camera_rig.make_current()
 
 
-func _nearest_vehicle() -> Car:
-	var best: Car = null
+## Vehicles are any Node3D in group "vehicles" implementing the
+## enter(driver)/exit()/has_driver() contract (Car, Bike, Boat, ...).
+func _nearest_vehicle() -> Node3D:
+	var best: Node3D = null
 	var best_distance := enter_vehicle_range
 	for vehicle in get_tree().get_nodes_in_group("vehicles"):
-		var car := vehicle as Car
-		if car == null:
+		var body := vehicle as Node3D
+		if body == null or not body.has_method("enter"):
 			continue
-		var distance := global_position.distance_to(car.global_position)
+		var distance := global_position.distance_to(body.global_position)
 		if distance <= best_distance:
-			best = car
+			best = body
 			best_distance = distance
 	return best
 
