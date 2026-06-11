@@ -60,6 +60,12 @@ signal footstep(surface: String, is_left: bool)
 @export var fall_safe_speed: float = 9.0
 @export var fall_lethal_speed: float = 22.0
 @export var fall_max_damage: float = 100.0
+## Breath: seconds of air with the head under, how far down (submersion) counts
+## as submerged, surface recovery rate, and drowning damage per second at empty.
+@export var breath_seconds: float = 12.0
+@export_range(0.0, 1.0) var head_submersion_fraction: float = 0.9
+@export var oxygen_recover_rate: float = 0.5
+@export var drown_damage_per_second: float = 10.0
 
 var _time_since_grounded: float = 0.0
 var _time_since_jump_pressed: float = 1.0
@@ -70,6 +76,7 @@ var _step_is_left: bool = false
 var _swimming: bool = false
 var _phone_ui: Phone = null
 var _was_on_floor: bool = true
+var _oxygen: float = 1.0
 
 @onready var _camera_rig: OrbitCamera = $CameraRig
 @onready var _rig: CharacterAnimator = $Rig
@@ -195,9 +202,11 @@ func _update_swimming(delta: float) -> bool:
 	var water := _current_water()
 	if water == null:
 		_swimming = false
+		_update_breath(0.0, delta)
 		return false
 
 	var fraction := SwimMotion.submersion(global_position.y, water.surface_y(), body_height)
+	_update_breath(fraction, delta)
 	_swimming = SwimMotion.is_swimming(fraction, _swimming, swim_enter_fraction, swim_exit_fraction)
 	if not _swimming:
 		return false
@@ -248,16 +257,27 @@ func _update_landing(impact_speed: float) -> void:
 			impact_speed, fall_safe_speed, fall_lethal_speed, fall_max_damage
 		)
 		if damage > 0.0:
-			_apply_fall_damage(damage)
+			_hurt(damage)
 	_was_on_floor = grounded
 
 
-## Route fall damage through the player's PlayerHealth (group "player_health"),
+## Route damage (falls, drowning) through PlayerHealth (group "player_health"),
 ## the same public API pickups and weapons use — keeps Player decoupled from it.
-func _apply_fall_damage(amount: float) -> void:
+func _hurt(amount: float) -> void:
 	for health in get_tree().get_nodes_in_group("player_health"):
 		if health.has_method("take_damage"):
 			health.take_damage(amount)
+
+
+## Drain/refill the breath reserve from how submerged the head is, and once it's
+## empty underwater, drown the player a bit each frame. Pure model in SwimMotion.
+func _update_breath(submersion: float, delta: float) -> void:
+	var underwater := SwimMotion.head_underwater(submersion, head_submersion_fraction)
+	_oxygen = SwimMotion.next_oxygen(
+		_oxygen, underwater, breath_seconds, oxygen_recover_rate, delta
+	)
+	if underwater and _oxygen <= 0.0:
+		_hurt(drown_damage_per_second * delta)
 
 
 ## Bank ground distance and emit `footstep` each time a full stride is covered,
