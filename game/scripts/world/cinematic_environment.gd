@@ -35,9 +35,11 @@ static func build() -> Environment:
 	env.glow_intensity = 0.7
 	env.glow_bloom = 0.15
 
-	# Volumetric fog for depth and atmosphere down the avenues.
+	# Volumetric fog for depth and atmosphere down the avenues. Kept light:
+	# 0.012 turned the scene into a near-opaque grey void (character barely
+	# visible ~8 m out); this reads as aerial depth, not soup.
 	env.volumetric_fog_enabled = true
-	env.volumetric_fog_density = 0.012
+	env.volumetric_fog_density = 0.002
 	env.volumetric_fog_albedo = Color(0.82, 0.86, 0.92)
 
 	# A gentle cinematic grade — a touch more contrast and saturation.
