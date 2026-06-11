@@ -31,10 +31,21 @@ const PITCH_MAX: float = 0.5
 @export var aim_smoothing: float = 12.0
 ## How fast a recoil kick eases back to zero (1/s).
 @export var recoil_recovery: float = 9.0
+## Trauma-based shake (gunfire/impacts/landings call add_shake). Max per-axis
+## angles (rad) at full trauma; trauma decays at shake_decay/s and the offset is
+## trauma^shake_exponent so light hits stay subtle. Applied to the leaf camera
+## so it never fights look/recoil. shake_frequency sets how buzzy it reads.
+@export var shake_max_angles: Vector3 = Vector3(0.05, 0.04, 0.06)
+@export var shake_decay: float = 1.4
+@export_range(1.0, 4.0) var shake_exponent: float = 2.0
+@export var shake_frequency: float = 18.0
 
 var _pitch: float = 0.0
 var _recoil: float = 0.0
 var _aiming: bool = false
+var _trauma: float = 0.0
+var _shake_time: float = 0.0
+var _shake_noise: FastNoiseLite = null
 
 @onready var _arm: SpringArm3D = $SpringArm
 @onready var _camera: Camera3D = $SpringArm/Camera
@@ -44,6 +55,7 @@ func _ready() -> void:
 	_arm.position = shoulder_offset
 	_camera.fov = base_fov
 	_pitch = _arm.rotation.x
+	_shake_noise = FastNoiseLite.new()
 
 
 ## Hold the camera in the tighter aim FOV. WeaponController sets this each frame
@@ -56,6 +68,13 @@ func set_aiming(value: bool) -> void:
 ## burst climbs and then re-settles on the original aim.
 func add_recoil(amount: float) -> void:
 	_recoil += amount
+
+
+## Add camera-shake trauma in [0, 1] from a gameplay event; scale to its
+## violence (a pistol shot is a tap, a car crash is a jolt). Trauma accumulates
+## and decays in _update_shake.
+func add_shake(amount: float) -> void:
+	_trauma = CameraShake.add(_trauma, amount)
 
 
 ## Re-activate this rig's camera (e.g. after stepping out of a vehicle).
@@ -79,6 +98,24 @@ func _physics_process(delta: float) -> void:
 	_apply_stick_look(delta)
 	_recoil = move_toward(_recoil, 0.0, recoil_recovery * delta)
 	_arm.rotation.x = clampf(_pitch, PITCH_MIN, PITCH_MAX) + _recoil
+	_update_shake(delta)
+
+
+## Decay trauma and apply the resulting shake as a small rotation on the leaf
+## camera (isolated from yaw/pitch/recoil). Decorrelated noise per axis comes
+## from sampling the noise field at separate offsets along an advancing time.
+func _update_shake(delta: float) -> void:
+	_trauma = CameraShake.decay(_trauma, shake_decay, delta)
+	if _trauma <= 0.0:
+		_camera.rotation = Vector3.ZERO
+		return
+	_shake_time += delta * shake_frequency
+	var noise := Vector3(
+		_shake_noise.get_noise_2d(_shake_time, 0.0),
+		_shake_noise.get_noise_2d(_shake_time, 100.0),
+		_shake_noise.get_noise_2d(_shake_time, 200.0)
+	)
+	_camera.rotation = CameraShake.angular_offset(_trauma, shake_exponent, shake_max_angles, noise)
 
 
 ## Gamepad right-stick look, read as continuous axis state each frame (unlike
