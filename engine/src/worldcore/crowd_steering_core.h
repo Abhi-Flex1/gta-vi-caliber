@@ -121,12 +121,15 @@ inline Vec2 avoid_obstacles(Vec2 self_pos, const std::vector<Vec2> &positions,
     Vec2 force{0.0, 0.0};
     const std::size_t n = positions.size() < radii.size() ? positions.size() : radii.size();
     for (std::size_t i = 0; i < n; ++i) {
+        const double safe = radii[i] + margin;
+        if (safe <= 1e-6) {
+            continue; // obstacle has no positive avoidance range — ignore it
+        }
         const Vec2 d = sub(self_pos, positions[i]);
         const double dist = length(d);
-        const double safe = radii[i] + margin;
         if (dist <= 1e-6) {
             force = add(force, Vec2{1.0, 0.0}); // dead centre — push a fixed way out
-        } else if (dist < safe && safe > 1e-6) {
+        } else if (dist < safe) {
             const double penetration = (safe - dist) / safe; // 0..1, deeper = stronger
             force = add(force, scale(normalize(d), penetration));
         }

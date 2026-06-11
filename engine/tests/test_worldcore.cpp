@@ -286,6 +286,12 @@ static void test_avoid_pushes_off_obstacle() {
     // An obstacle far outside radius+margin exerts no force.
     std::vector<Vec2> faro = {{100.0, 0.0}};
     CHECK(length(avoid_obstacles(Vec2{0.0, 0.0}, faro, radii, 1.0)) < 1e-9);
+    // Degenerate obstacle (zero radius + zero margin) exerts no force even when
+    // the agent sits exactly on its centre (Codex: dead-centre branch needs the
+    // same safe>0 guard as the penetration branch).
+    std::vector<Vec2> here = {{0.0, 0.0}};
+    std::vector<double> zero = {0.0};
+    CHECK(length(avoid_obstacles(Vec2{0.0, 0.0}, here, zero, 0.0)) < 1e-9);
 }
 
 int main() {
