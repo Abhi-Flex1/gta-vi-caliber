@@ -32,6 +32,7 @@ func _ready() -> void:
 	var proj := GeoProjection.new(origin["lat"], origin["lon"])
 
 	var built_buildings := _build_buildings(data.get("buildings", []), proj)
+	_build_rooftops(data.get("buildings", []), proj)
 	_build_roads(data.get("roads", []), proj)
 	_build_streetlights(data.get("roads", []), proj)
 	_build_trees(data.get("roads", []), proj)
@@ -47,6 +48,60 @@ func _ready() -> void:
 		)
 	)
 	district_built.emit(nb, nr)
+
+
+## Break up the flat-topped skyline: put a water tank and an AC unit on the roof
+## of each taller building (centroid of its footprint, at roof height). Shared
+## meshes/materials and a cap keep the whole skyline cheap.
+func _build_rooftops(buildings: Array, proj: GeoProjection) -> void:
+	var tank_mat := StandardMaterial3D.new()
+	tank_mat.albedo_color = Color(0.4, 0.36, 0.3)
+	tank_mat.roughness = 0.85
+	var ac_mat := StandardMaterial3D.new()
+	ac_mat.albedo_color = Color(0.5, 0.51, 0.54)
+	ac_mat.metallic = 0.5
+	ac_mat.roughness = 0.5
+	var tank_mesh := CylinderMesh.new()
+	tank_mesh.top_radius = 1.1
+	tank_mesh.bottom_radius = 1.1
+	tank_mesh.height = 2.2
+	var ac_mesh := BoxMesh.new()
+	ac_mesh.size = Vector3(2.6, 1.2, 2.0)
+
+	var container := Node3D.new()
+	container.name = "Rooftops"
+	add_child(container)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7
+	var placed := 0
+	for b in buildings:
+		if placed >= 160:
+			break
+		var height := float(b.get("height_m", 0.0))
+		if height < 15.0:
+			continue
+		var ring := _project_ring(b["footprint"], proj)
+		if ring.size() < 3:
+			continue
+		var centre := Vector2.ZERO
+		for p in ring:
+			centre += p
+		centre /= float(ring.size())
+		var roof := Node3D.new()
+		roof.position = Vector3(centre.x, height, centre.y)
+		var tank := MeshInstance3D.new()
+		tank.mesh = tank_mesh
+		tank.material_override = tank_mat
+		tank.position = Vector3(rng.randf_range(-2.5, 2.5), 1.1, rng.randf_range(-2.5, 2.5))
+		roof.add_child(tank)
+		var ac := MeshInstance3D.new()
+		ac.mesh = ac_mesh
+		ac.material_override = ac_mat
+		ac.position = Vector3(rng.randf_range(-2.5, 2.5), 0.6, rng.randf_range(-2.5, 2.5))
+		ac.rotation.y = rng.randf() * TAU
+		roof.add_child(ac)
+		container.add_child(roof)
+		placed += 1
 
 
 ## Sprinkle sidewalk furniture — trash bins and fire hydrants — along the kerb of
