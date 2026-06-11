@@ -240,14 +240,44 @@ static func leg(length: float = 0.82) -> Dictionary:
 
 
 ## A rounded fist, spine along Y, sized to sit at the wrist.
+## A hand: a flattened palm with four tapered fingers and a thumb off the side,
+## merged into one mesh. Fingers point -Y (continuing the arm from the wrist).
 static func hand() -> Dictionary:
-	var rings: Array = [
-		Vector3(0.06, 0.03, 0.035),
-		Vector3(0.02, 0.058, 0.066),
-		Vector3(-0.03, 0.062, 0.072),
-		Vector3(-0.06, 0.04, 0.05),
-	]
-	return lofted(rings, 12)
+	var palm := lofted(
+		[
+			Vector3(0.05, 0.032, 0.042),
+			Vector3(0.0, 0.06, 0.072),
+			Vector3(-0.04, 0.062, 0.074),
+			Vector3(-0.07, 0.05, 0.058),
+		],
+		12
+	)
+	# [x offset, length] per finger: index, middle, ring, little.
+	for finger in [[-0.04, 0.085], [-0.014, 0.095], [0.013, 0.088], [0.038, 0.07]]:
+		var length: float = finger[1]
+		var seg := limb(length, 0.013, 0.013, 0.008, 8, 6)
+		_merge(palm, seg, Vector3(finger[0], -0.07 - length * 0.5, 0.012))
+	var thumb := limb(0.07, 0.016, 0.015, 0.01, 8, 6)
+	_merge(palm, thumb, Vector3(0.062, -0.03, 0.022))
+	return palm
+
+
+## Append src's geometry (translated by offset) into dst, offsetting indices.
+static func _merge(dst: Dictionary, src: Dictionary, offset: Vector3) -> void:
+	if src.is_empty():
+		return
+	var verts: PackedVector3Array = dst["vertices"]
+	var normals: PackedVector3Array = dst["normals"]
+	var indices: PackedInt32Array = dst["indices"]
+	var base: int = verts.size()
+	for v in src["vertices"] as PackedVector3Array:
+		verts.append(v + offset)
+	normals.append_array(src["normals"])
+	for i in src["indices"] as PackedInt32Array:
+		indices.append(base + i)
+	dst["vertices"] = verts
+	dst["normals"] = normals
+	dst["indices"] = indices
 
 
 ## A shoe: a rounded, forward-pointing form (spine along +Z, toe forward) with a
