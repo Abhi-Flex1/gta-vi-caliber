@@ -77,6 +77,9 @@ var _mouth: StandardMaterial3D
 # Each leg: {hip, knee, amp}; each arm: {shoulder, elbow, amp}.
 var _legs: Array = []
 var _arms: Array = []
+# Idle life: a gentle chest breath so a standing character is never a statue.
+var _torso: MeshInstance3D
+var _breath_t: float = 0.0
 
 
 func _ready() -> void:
@@ -100,9 +103,16 @@ func _ready() -> void:
 	_articulate_arm(rig, "Hips/ShoulderL", "ArmL", "HandL", arm_amp)
 	_articulate_arm(rig, "Hips/ShoulderR", "ArmR", "HandR", arm_amp)
 	_add_head_details(rig)
+	_torso = rig.get_node_or_null("Hips/Torso") as MeshInstance3D
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	# A slow chest breath (~14/min) expanding the torso depth/width keeps a
+	# standing character alive; it's masked by the bigger walk motion when moving.
+	_breath_t += delta
+	if _torso != null:
+		var breath := sin(_breath_t * 1.5)
+		_torso.scale = Vector3(1.0 + 0.016 * breath, 1.0, 1.0 + 0.024 * breath)
 	# Knee/elbow flex derives from the live hip/shoulder swing, so it stays in
 	# perfect lockstep with the animator without sharing a phase clock.
 	for leg in _legs:
