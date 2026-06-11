@@ -22,10 +22,10 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-# Shared world anchor for the entire LA map: downtown LA. Every district
-# projects against this so they line up at correct real-world offsets, ready for
-# a streaming system to page districts in and out of one continuous world.
-WORLD_ORIGIN = (34.0503318, -118.2523673)
+# Shared world anchor for the whole map: downtown Miami, Florida (Vice City).
+# Every district projects against this so they line up at correct real-world
+# offsets, ready for a streamer to page them in/out of one continuous world.
+WORLD_ORIGIN = (25.7743, -80.1937)
 
 OVERPASS_URL = "https://overpass-api.de/api/interpreter"
 USER_AGENT = "GTA6-OSS-worldgen/0.1 (https://github.com/; open-source game world importer)"
