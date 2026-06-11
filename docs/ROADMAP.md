@@ -70,7 +70,7 @@ Goal: one city district that feels inhabited.
     via the baked navmesh. Reactions (flee) in `Pedestrian`. TODO: route peds
     *through* `NavGrid.find_path` (now that buildings are solid) instead of straight
     wander; gawk reaction. Demo: `scenes/world/living_city.tscn` (crowd + traffic).
-- [ ] Time-of-day cycle driving sun, streetlights, building windows
+- [x] Time-of-day cycle driving sun, streetlights, building windows
 - [ ] Weather fronts: clear → overcast → rain, wet-surface materials
 - [x] Ocean v1: Gerstner/FFT water with shoreline blend (**`engine/` candidate**)
 

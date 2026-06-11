@@ -7,8 +7,10 @@ render_mode cull_disabled;
 // DistrictLoader from CityBuilder.building_color); per-window variation is
 // hashed from the window cell so no two facades read as copy-paste.
 
-// Day->night driver for window emission. A future time-of-day system sets
-// this (0 = full daylight, 1 = full night). Default 0 keeps the city sun-lit.
+// Day->night driver for window emission (0 = full daylight, 1 = full night).
+// SkyController feeds the world_night_amount global every frame; night_mix
+// stays as a per-material manual override for demos/tests. The larger wins.
+global uniform float world_night_amount;
 uniform float night_mix : hint_range(0.0, 1.0) = 0.0;
 // Storey height, metres (downtown mid/high-rise rhythm).
 uniform float floor_height = 3.2;
@@ -76,5 +78,6 @@ void fragment() {
 	// Night life: a hashed subset of rooms lights up, each its own warmth.
 	float lit = step(0.62, hash21(cell + vec2(seed + 47.0)));
 	vec3 lamp = mix(vec3(1.0, 0.82, 0.55), vec3(0.95, 0.93, 0.85), hash21(cell + vec2(3.0)));
-	EMISSION = lamp * win * lit * night_mix * (1.2 + 1.6 * hash21(cell + vec2(seed + 5.0)));
+	float night = max(night_mix, world_night_amount);
+	EMISSION = lamp * win * lit * night * (1.2 + 1.6 * hash21(cell + vec2(seed + 5.0)));
 }
