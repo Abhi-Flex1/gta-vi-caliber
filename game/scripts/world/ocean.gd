@@ -19,6 +19,7 @@ var _material: StandardMaterial3D = null
 
 
 func _ready() -> void:
+	add_to_group("water")  # Floaters find the sea here to sample buoyancy
 	_material = StandardMaterial3D.new()
 	_material.albedo_color = water_color
 	_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
