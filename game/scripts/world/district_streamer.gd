@@ -80,7 +80,10 @@ func _load_district(name: String) -> void:
 		node.name = "District_%s" % name
 		node.set_script(DistrictLoaderScript)
 		node.set("district_path", d["data"])
-		node.set("place_player", false)
+		# The FIRST district to page in owns spawn: it snaps the player onto its
+		# nearest street so they don't start buried inside a building at the fixed
+		# scene spawn point. Later districts leave the player where they are.
+		node.set("place_player", _resident.is_empty())
 		add_child(node)
 		_resident[name] = node
 		return
