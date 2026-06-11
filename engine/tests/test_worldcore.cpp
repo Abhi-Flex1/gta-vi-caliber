@@ -6,6 +6,7 @@
 #include <cstring>
 
 #include "../src/native_bench/bench_kernels.h"
+#include "../src/worldcore/impostor_core.h"
 #include "../src/worldcore/tile_streamer_core.h"
 #include "../src/worldcore/worldcore_version.h"
 
@@ -88,6 +89,49 @@ static void test_unload_uses_hysteresis() {
     CHECK(drop.front() == (TileCoord{5, 0}));
 }
 
+static void test_octa_encode_cardinals() {
+    using worldcore_impostor::octa_encode;
+    double u, v;
+    octa_encode(0.0, 1.0, 0.0, u, v); // straight up -> center
+    CHECK(std::fabs(u - 0.5) < 1e-9 && std::fabs(v - 0.5) < 1e-9);
+    octa_encode(1.0, 0.0, 0.0, u, v); // +x -> right edge, mid height
+    CHECK(std::fabs(u - 1.0) < 1e-9 && std::fabs(v - 0.5) < 1e-9);
+    octa_encode(0.0, 0.0, 1.0, u, v); // +z -> mid width, top edge
+    CHECK(std::fabs(u - 0.5) < 1e-9 && std::fabs(v - 1.0) < 1e-9);
+    octa_encode(-1.0, 0.0, 0.0, u, v); // -x -> left edge
+    CHECK(std::fabs(u - 0.0) < 1e-9 && std::fabs(v - 0.5) < 1e-9);
+}
+
+static void test_atlas_cell_clamps() {
+    using worldcore_impostor::atlas_cell;
+    int col, row;
+    atlas_cell(0.0, 0.0, 8, col, row);
+    CHECK(col == 0 && row == 0);
+    atlas_cell(0.99, 0.99, 8, col, row);
+    CHECK(col == 7 && row == 7);
+    atlas_cell(1.0, 1.0, 8, col, row); // edge u=1 must clamp, not index 8
+    CHECK(col == 7 && row == 7);
+    atlas_cell(0.5, 0.5, 8, col, row);
+    CHECK(col == 4 && row == 4);
+}
+
+static void test_projected_radius_shrinks_with_distance() {
+    using worldcore_impostor::projected_radius_px;
+    const double fov = 60.0 * 3.14159265358979323846 / 180.0;
+    const double near_px = projected_radius_px(10.0, 50.0, fov, 1080.0);
+    const double far_px = projected_radius_px(10.0, 500.0, fov, 1080.0);
+    CHECK(near_px > far_px);
+    CHECK(far_px > 0.0);
+}
+
+static void test_should_impostor_threshold() {
+    using worldcore_impostor::should_impostor;
+    const double fov = 60.0 * 3.14159265358979323846 / 180.0;
+    // 10 m bound, 32 px threshold: close stays a mesh, far becomes an impostor.
+    CHECK(!should_impostor(10.0, 50.0, fov, 1080.0, 32.0));
+    CHECK(should_impostor(10.0, 500.0, fov, 1080.0, 32.0));
+}
+
 int main() {
     test_version_is_consistent();
     test_sum_of_squares();
@@ -95,6 +139,10 @@ int main() {
     test_desired_tiles_within_radius_nearest_first();
     test_velocity_prioritizes_tiles_ahead();
     test_unload_uses_hysteresis();
+    test_octa_encode_cardinals();
+    test_atlas_cell_clamps();
+    test_projected_radius_shrinks_with_distance();
+    test_should_impostor_threshold();
     if (failures > 0) {
         std::fprintf(stderr, "engine tests: %d failure(s)\n", failures);
         return 1;
