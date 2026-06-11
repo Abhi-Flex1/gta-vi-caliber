@@ -26,6 +26,26 @@ const ROOFLINE: Array[Vector2] = [
 	Vector2(0.76, 1.04),
 	Vector2(1.0, 0.86),
 ]
+## A taller, longer-cabined SUV silhouette.
+const ROOFLINE_SUV: Array[Vector2] = [
+	Vector2(0.0, 0.7),
+	Vector2(0.12, 0.96),
+	Vector2(0.3, 1.02),
+	Vector2(0.4, 1.5),
+	Vector2(0.74, 1.52),
+	Vector2(0.86, 1.32),
+	Vector2(1.0, 1.06),
+]
+## A boxy cab-forward van: tall flat roof across most of the length.
+const ROOFLINE_VAN: Array[Vector2] = [
+	Vector2(0.0, 0.72),
+	Vector2(0.1, 1.02),
+	Vector2(0.22, 1.56),
+	Vector2(0.3, 1.62),
+	Vector2(0.86, 1.62),
+	Vector2(0.95, 1.42),
+	Vector2(1.0, 1.12),
+]
 # The greenhouse window band: faces whose centroid sits at cabin height and
 # within the cabin length become the glass surface; everything else is paint —
 # carving a windshield/side/rear-window belt with no extra geometry (painted
@@ -40,14 +60,19 @@ const GLASS_Z_REAR: float = 0.95
 ## mesh is centred on X and Z with the floor at FLOOR_Y, matching the greybox
 ## chassis it replaces so no node transform has to move.
 static func body(
-	length: float = 4.2, width: float = 1.9, slices: int = 28, segments: int = 24
+	length: float = 4.2, width: float = 1.9, slices: int = 28, segments: int = 24, style: int = 0
 ) -> Dictionary:
+	var roofline: Array = ROOFLINE
+	if style == 1:
+		roofline = ROOFLINE_SUV
+	elif style == 2:
+		roofline = ROOFLINE_VAN
 	var prof: Array = []
 	for i in slices + 1:
 		var u: float = float(i) / float(slices)
 		var z: float = lerpf(-length * 0.5, length * 0.5, u)
 		var half_w: float = width * 0.5 * _width_profile(u)
-		var top: float = _roofline(u)
+		var top: float = _roofline(u, roofline)
 		prof.append([z, half_w, (top + FLOOR_Y) * 0.5, (top - FLOOR_Y) * 0.5])
 	return _loft(prof, segments)
 
@@ -59,13 +84,13 @@ static func _width_profile(u: float) -> float:
 
 
 ## Roof height at u via smoothstep-interpolated control points.
-static func _roofline(u: float) -> float:
-	for i in range(ROOFLINE.size() - 1):
-		if u <= ROOFLINE[i + 1].x:
-			var span: float = maxf(ROOFLINE[i + 1].x - ROOFLINE[i].x, 1e-5)
-			var t: float = smoothstep(0.0, 1.0, (u - ROOFLINE[i].x) / span)
-			return lerpf(ROOFLINE[i].y, ROOFLINE[i + 1].y, t)
-	return ROOFLINE[ROOFLINE.size() - 1].y
+static func _roofline(u: float, points: Array) -> float:
+	for i in range(points.size() - 1):
+		if u <= points[i + 1].x:
+			var span: float = maxf(points[i + 1].x - points[i].x, 1e-5)
+			var t: float = smoothstep(0.0, 1.0, (u - points[i].x) / span)
+			return lerpf(points[i].y, points[i + 1].y, t)
+	return points[points.size() - 1].y
 
 
 ## Superellipse point at the given angle for a half-width/half-height box.

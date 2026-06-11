@@ -62,3 +62,12 @@ func test_to_mesh_builds_surface() -> bool:
 
 func test_to_mesh_empty_is_null() -> bool:
 	return CarMesh.to_mesh({}) == null
+
+
+func test_body_styles_differ_in_height() -> bool:
+	# SUV (1) and van (2) silhouettes must stand taller than the sedan (0) so
+	# traffic reads as a mix of vehicle types, not one repeated car.
+	var sedan := _aabb(CarMesh.body(4.2, 1.9, 14, 14, 0))
+	var suv := _aabb(CarMesh.body(4.2, 1.9, 14, 14, 1))
+	var van := _aabb(CarMesh.body(4.2, 1.9, 14, 14, 2))
+	return suv.size.y > sedan.size.y + 0.1 and van.size.y > suv.size.y

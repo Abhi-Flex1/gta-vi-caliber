@@ -13,6 +13,8 @@ const WHEELS: Array[String] = ["WheelFL", "WheelFR", "WheelRL", "WheelRR"]
 
 ## Body paint; metallic flake by default. Swap per-vehicle for colour variety.
 @export var paint_color: Color = Color(0.74, 0.18, 0.15)
+## Silhouette: 0 sedan, 1 SUV, 2 van. -1 = pick at random so traffic varies.
+@export var body_style: int = -1
 
 
 func _ready() -> void:
@@ -20,9 +22,14 @@ func _ready() -> void:
 	if car == null:
 		return
 
+	var style := body_style
+	if style < 0:
+		var srng := RandomNumberGenerator.new()
+		srng.randomize()
+		style = srng.randi() % 3
 	var chassis: MeshInstance3D = car.get_node_or_null("Chassis") as MeshInstance3D
 	if chassis != null:
-		var mesh := CarMesh.to_mesh_glazed(CarMesh.body())
+		var mesh := CarMesh.to_mesh_glazed(CarMesh.body(4.2, 1.9, 28, 24, style))
 		chassis.mesh = mesh
 		chassis.set_surface_override_material(0, _paint())
 		if mesh != null and mesh.get_surface_count() > 1:
