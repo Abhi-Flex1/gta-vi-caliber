@@ -32,6 +32,8 @@ const GRAVITY: float = 9.81
 @export var downshift_rpm: float = 2600.0
 
 @export var max_brake: float = 55.0
+## Gentle braking from engine drag when coasting off-throttle in gear.
+@export var max_engine_brake: float = 6.0
 @export var max_steer: float = 0.55
 ## Speed (m/s) at which available steering lock is halved.
 @export var steer_falloff_speed: float = 12.0
@@ -144,6 +146,11 @@ func _drive(delta: float) -> void:
 	elif throttle < 0.0 and forward_speed >= REVERSE_SPEED_THRESHOLD:
 		# "Back" while still rolling forward = service brake, not reverse yet.
 		brake = max_brake * 0.7
+	elif is_zero_approx(pedal):
+		# Coasting off-throttle in gear: let engine drag slow the car.
+		brake = Powertrain.engine_brake(
+			rpm, redline_rpm, gear_ratios[gear - 1], gear_ratios[0], max_engine_brake
+		)
 	else:
 		brake = 0.0
 

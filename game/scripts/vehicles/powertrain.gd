@@ -76,6 +76,26 @@ static func wheel_force(
 	return pedal * engine_torque_nm * gear_ratio * final_drive * efficiency / wheel_radius
 
 
+## Retarding brake force from engine drag when coasting off-throttle — the
+## deceleration you feel lifting off in gear. Grows with revs (pumping and
+## friction losses climb with RPM) and with how tall the current gear is (a low
+## gear multiplies that drag to the wheels), normalised so first gear at the
+## redline returns max_engine_brake. Returned as a positive amount for the caller
+## to add to the service brake; never negative.
+static func engine_brake(
+	rpm: float,
+	redline_rpm: float,
+	gear_ratio: float,
+	first_gear_ratio: float,
+	max_engine_brake: float
+) -> float:
+	if redline_rpm <= 0.0 or first_gear_ratio <= 0.0:
+		return 0.0
+	var rev := clampf(rpm / redline_rpm, 0.0, 1.0)
+	var gear_factor := clampf(absf(gear_ratio) / first_gear_ratio, 0.0, 1.0)
+	return maxf(max_engine_brake, 0.0) * rev * gear_factor
+
+
 ## Pick the forward gear (1..top_gear) for the current RPM. Upshifts when the
 ## engine climbs past upshift_rpm, downshifts when it drops below downshift_rpm,
 ## and otherwise holds. Keep upshift_rpm well above downshift_rpm: the gap is the
