@@ -53,7 +53,7 @@ Goal: walk or drive 4 km in any direction with no loading screen.
 - [ ] **`engine/`: runtime impostor baker** for distant buildings
 - [x] Floating-origin shift to dodge float precision at distance
 - [ ] Streaming debug HUD (tiles resident, VRAM, frame budget)
-- [ ] Benchmark scene + captured profile checked into `docs/profiles/`
+- [x] Benchmark scene + captured profile checked into `docs/profiles/`
 
 ## M4 — A living district
 
