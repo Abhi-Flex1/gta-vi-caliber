@@ -24,6 +24,12 @@ offset_bottom = -26.0
 horizontal_alignment = 2
 vertical_alignment = 1
 
+[node name="Mission" type="Label" parent="."]
+offset_left = 28.0
+offset_top = 24.0
+offset_right = 460.0
+offset_bottom = 50.0
+
 [node name="Health" type="Label" parent="."]
 anchor_top = 1.0
 anchor_bottom = 1.0

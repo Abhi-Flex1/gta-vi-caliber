@@ -16,11 +16,13 @@ extends CanvasLayer
 
 var _controller: Node = null
 var _player_health: Node = null
+var _mission: Node = null
 
 @onready var _ammo: Label = $Ammo
 @onready var _crosshair: Crosshair = $Crosshair
 @onready var _health: Label = $Health
 @onready var _status: Label = $Status
+@onready var _mission_label: Label = $Mission
 
 
 func _ready() -> void:
@@ -38,6 +40,9 @@ func _bind() -> void:
 	var health := get_tree().get_nodes_in_group("player_health")
 	if not health.is_empty():
 		_player_health = health[0]
+	var mission := get_tree().get_nodes_in_group("mission")
+	if not mission.is_empty():
+		_mission = mission[0]
 
 
 func _on_hit_confirmed(killed: bool) -> void:
@@ -47,6 +52,8 @@ func _on_hit_confirmed(killed: bool) -> void:
 
 func _process(delta: float) -> void:
 	_update_health()
+	if _mission != null:
+		_mission_label.text = _mission.hud_text()
 	if _controller == null:
 		return
 	if _crosshair.hit_flash > 0.0:
