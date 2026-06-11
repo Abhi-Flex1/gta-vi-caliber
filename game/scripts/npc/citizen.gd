@@ -1,0 +1,217 @@
+class_name Citizen
+extends Pedestrian
+## A pedestrian with an inner life. Inherits all of Pedestrian's movement,
+## procedural walking, flee-when-shot and damage handling, then layers on the
+## deliberative life-sim: an occupation and personality (NpcArchetypes), a daily
+## routine it actually walks (NpcSchedule + the CityDirector's POIs), decaying
+## drives that occasionally hijack the plan (NpcNeeds + NpcMind), proximity
+## reactions (NpcReaction), and an absurd running commentary (NpcDialogue) shown
+## in a speech bubble.
+##
+## The intelligence is all in the pure, tested modules; this node is the glue
+## that turns their decisions into a citizen crossing the street to a diner while
+## muttering that the foam predicted this. Reuse over reinvention: it overrides
+## exactly two Pedestrian seams — `_pick_new_target` (where to go next) and
+## `_physics_process` (per-frame flavour) — and leaves the rest untouched.
+
+# Drive decay per in-game hour. Tuned so a full work block leaves a citizen
+# hungry/bored enough to sometimes ditch the schedule — the deviation reads as life.
+const DECAY_RATES: Dictionary = {
+	"energy": 0.05, "hunger": 0.10, "social": 0.06, "fun": 0.08, "hygiene": 0.05
+}
+# Which drive an activity replenishes once the citizen has spent time on it.
+const ACTIVITY_NEED: Dictionary = {
+	"sleep": "energy",
+	"eat": "hunger",
+	"socialize": "social",
+	"goof_off": "fun",
+	"freshen_up": "hygiene",
+}
+
+## Seconds between proximity-reaction checks (cheap throttle on the O(n) player scan).
+@export var react_interval: float = 0.7
+## How long a speech bubble stays at full opacity before fading.
+@export var bubble_seconds: float = 2.6
+## Force a specific archetype by id; empty = derive a stable one from the node.
+@export var archetype_id: String = ""
+
+var _needs := NpcNeeds.new(0.85)
+var _schedule: Array = []
+var _personality: Dictionary = {}
+var _voice: String = "generic"
+var _activity: String = "loiter"
+var _bravery: float = 0.5
+var _curiosity: float = 0.6
+var _voice_seed: int = 0
+var _bark_n: int = 0
+var _last_plan_hour: float = 8.0
+var _react_left: float = 0.0
+var _bubble_left: float = 0.0
+var _bubble: Label3D = null
+
+
+func _ready() -> void:
+	_assign_persona()
+	_make_bubble()
+	_last_plan_hour = _director_hour()
+	# Parent _ready sets _home/_hp/_rng and then calls _pick_new_target() — our
+	# override — so persona must already be in place above.
+	super._ready()
+	add_to_group("citizens")
+
+
+# --- persona ----------------------------------------------------------------
+
+
+func _assign_persona() -> void:
+	var arch: Dictionary = NpcArchetypes.by_id(archetype_id) if archetype_id != "" else {}
+	if arch.is_empty():
+		arch = NpcArchetypes.pick(absi(str(name).hash()))
+	_schedule = arch.get("schedule", [])
+	_personality = arch.get("personality", {})
+	_voice = String(arch.get("voice", "generic"))
+	_voice_seed = absi(str(name).hash())
+	# Stable per-citizen nerve/nosiness so the same person always reacts the same.
+	_bravery = 0.25 + float(_voice_seed % 60) / 100.0
+	_curiosity = 0.35 + float((_voice_seed / 60) % 60) / 100.0
+	_apply_tint(arch.get("tint", Color(0.5, 0.5, 0.5)))
+
+
+## Recolour the shirt (torso + arms) to the archetype tint so a Doomsday Barista
+## reads differently from a Mime at a glance. Materials are duplicated first so we
+## never mutate a shared resource on the shared HumanoidBody.
+func _apply_tint(color: Color) -> void:
+	for path in ["Rig/Hips/Torso", "Rig/Hips/ShoulderL/ArmL", "Rig/Hips/ShoulderR/ArmR"]:
+		var mi := get_node_or_null(path) as MeshInstance3D
+		if mi == null:
+			continue
+		var mat: StandardMaterial3D = mi.material_override as StandardMaterial3D
+		if mat == null:
+			mat = StandardMaterial3D.new()
+		else:
+			mat = mat.duplicate()
+		mat.albedo_color = color
+		mi.material_override = mat
+
+
+func _make_bubble() -> void:
+	_bubble = Label3D.new()
+	_bubble.name = "Bubble"
+	_bubble.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_bubble.fixed_size = true
+	_bubble.pixel_size = 0.0007
+	_bubble.font_size = 64
+	_bubble.outline_size = 14
+	_bubble.position = Vector3(0.0, 2.15, 0.0)
+	_bubble.modulate = Color(1, 1, 1, 0)
+	add_child(_bubble)
+
+
+# --- daily routine (overrides Pedestrian's random wander) -------------------
+
+
+func _pick_new_target() -> void:
+	var director := _city_director()
+	if director == null or not director.has_pois():
+		super._pick_new_target()  # no city laid out — just amble like a pedestrian
+		return
+
+	var hour := director.hour()
+	# Decay drives for the time since the last plan, then bank the drive the
+	# just-finished activity restored.
+	var elapsed := hour - _last_plan_hour
+	if elapsed < 0.0:
+		elapsed += 24.0
+	_needs.decay(clampf(elapsed, 0.0, 6.0), DECAY_RATES)
+	var restored := String(ACTIVITY_NEED.get(_activity, ""))
+	if restored != "":
+		_needs.satisfy(restored, 0.6)
+	_last_plan_hour = hour
+
+	var decision := NpcMind.decide(_schedule, hour, _needs, _personality)
+	_activity = String(decision.get("activity", "loiter"))
+	var place := String(decision.get("place", "street"))
+
+	_state = NpcBrain.State.WANDER
+	var dest := director.position_for(place, global_position)
+	dest += Vector3(_rng.randf_range(-1.6, 1.6), 0.0, _rng.randf_range(-1.6, 1.6))
+	_target = dest
+	_say(NpcDialogue.bark_for_activity(_voice, _activity, _next_seed()))
+
+
+# --- per-frame flavour ------------------------------------------------------
+
+
+func _physics_process(delta: float) -> void:
+	super._physics_process(delta)
+	_fade_bubble(delta)
+	_react_left -= delta
+	if _react_left <= 0.0:
+		_react_left = react_interval
+		_maybe_react()
+
+
+## React to a nearby player: bolt if frightened, rubberneck if merely intrigued.
+## Fleeing reuses Pedestrian's own fear machinery so the movement is consistent
+## with being shot at — the citizen just got spooked by proximity instead.
+func _maybe_react() -> void:
+	if is_dead():
+		return
+	var player := _nearest_player()
+	if player == null:
+		return
+	var dist := global_position.distance_to(player.global_position)
+	var speed := 0.0
+	if player is CharacterBody3D:
+		speed = (player as CharacterBody3D).velocity.length()
+	var threat := NpcReaction.threat_from(speed, false)
+	match NpcReaction.decide(dist, threat, _bravery, _curiosity):
+		"flee":
+			_fear = maxf(_fear, 2.0)
+			_threat_pos = player.global_position
+			_state = NpcBrain.State.FLEE
+			if _bubble.modulate.a <= 0.0:
+				_say(NpcDialogue.bark(_voice, "flee", _next_seed()))
+		"gawk":
+			if _bubble.modulate.a <= 0.0:
+				_say(NpcDialogue.bark(_voice, "gawk", _next_seed()))
+
+
+## Bark a fright line when shot, on top of Pedestrian's flee response.
+func take_damage(amount: float, point: Vector3, normal: Vector3) -> void:
+	super.take_damage(amount, point, normal)
+	_say(NpcDialogue.bark(_voice, "flee", _next_seed()))
+
+
+# --- helpers ----------------------------------------------------------------
+
+
+func _say(text: String) -> void:
+	if _bubble == null:
+		return
+	_bubble.text = text
+	_bubble.modulate.a = 1.0
+	_bubble_left = bubble_seconds
+
+
+func _fade_bubble(delta: float) -> void:
+	if _bubble == null or _bubble.modulate.a <= 0.0:
+		return
+	_bubble_left -= delta
+	if _bubble_left <= 0.0:
+		_bubble.modulate.a = maxf(_bubble.modulate.a - delta * 1.6, 0.0)
+
+
+func _next_seed() -> int:
+	_bark_n += 1
+	return _voice_seed + _bark_n
+
+
+func _director_hour() -> float:
+	var director := _city_director()
+	return director.hour() if director != null else 12.0
+
+
+func _city_director() -> CityDirector:
+	var nodes := get_tree().get_nodes_in_group("city_director")
+	return nodes[0] as CityDirector if not nodes.is_empty() else null
