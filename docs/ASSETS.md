@@ -42,6 +42,7 @@ close to existing commercial work regardless of provenance.
 | --- | --- | --- | --- | --- |
 | `game/icon.svg` | Project icon (sun over road) | project contributors | original | CC BY 4.0 |
 | `game/assets/world/downtown_la.json` | Building footprints/heights + road centerlines for the downtown district, extracted via `tools/osm/fetch_district.py` | © OpenStreetMap contributors | https://www.openstreetmap.org/copyright | ODbL 1.0 (data only; attribution embedded in file and credits) |
+| `game/assets/world/*.json` (18 districts + `districts.json` index) | Building footprints/heights + road centerlines for the LA-region districts (venice_beach, santa_monica, hollywood, …), same extractor | © OpenStreetMap contributors | https://www.openstreetmap.org/copyright | ODbL 1.0 (data only; attribution embedded in each file and credits) |
 
 *(Append one row per asset. Path relative to repo root. "Source" is `original`
 or a URL. License must be CC0, CC-BY-4.0, or CC-BY-4.0-compatible. Exception:

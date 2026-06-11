@@ -59,7 +59,7 @@ Goal: walk or drive 4 km in any direction with no loading screen.
 
 Goal: one city district that feels inhabited.
 
-- [ ] Blockout of a coastal district: streets, sidewalks, shore, 30+ building footprints
+- [x] Blockout of a coastal district: streets, sidewalks, shore, 30+ building footprints (venice_beach.tscn: 1332 real footprints, sand shore + Ocean v1, golden-hour sky)
 - [ ] Road network graph + traffic system (**`engine/` candidate after profiling**)
   - landed: `ai/nav_grid.gd` A* grid (tested) + `ai/traffic_*` streaming kinematic
     cars that route on a world-baked navmesh and car-follow (queue, don't overlap).
