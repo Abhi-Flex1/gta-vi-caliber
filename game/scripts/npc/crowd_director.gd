@@ -42,6 +42,10 @@ extends Node3D
 @export var snap_to_ground: bool = true
 @export var ground_probe_up: float = 8.0
 @export var ground_probe_down: float = 40.0
+## A spawn whose ground sits more than this far above the player's feet is
+## treated as a rooftop/ledge and rejected, so peds don't appear on building
+## tops. A spawn that finds no ground at all (a void) is rejected too.
+@export var max_walkable_rise: float = 2.5
 ## Physics layers the ground/world lives on (the ray ignores anything else, so
 ## it doesn't catch other pedestrians).
 @export_flags_3d_physics var ground_mask: int = 1
@@ -97,35 +101,42 @@ func _spawn(center: Vector3) -> void:
 		return
 	var n := CrowdDistribution.spawn_count(_peds.size(), target_count, spawn_budget)
 	for _i in n:
-		var offset := _walkable_offset(center)
-		if offset == Vector3.INF:
+		var pos := _find_spawn(center)
+		if pos == Vector3.INF:
 			continue  # nowhere walkable this tick; try again next tick
 		var ped := pedestrian_scene.instantiate() as Node3D
 		if ped == null:
 			return
 		_apply_variety(ped)
 		add_child(ped)
-		var pos := center + offset
-		pos.y = _ground_y(pos, center.y)
 		ped.global_position = pos
 		_peds.append(ped)
 
 
-## Sample an annulus offset that lands on a walkable cell. Without a nav grid,
-## the first sample is taken as-is. With one, up to walkable_attempts samples are
-## tried and the first on an open cell wins; Vector3.INF signals "no luck this
-## tick" so the caller skips rather than dropping a ped into a building.
-func _walkable_offset(center: Vector3) -> Vector3:
-	var attempts: int = walkable_attempts if nav != null else 1
+## Find a walkable world spawn point in the annulus, or Vector3.INF if none of
+## the sampled candidates pass this tick. A candidate is rejected when it falls
+## on a blocked nav cell (if a grid is set), over a void, or on a rooftop/ledge
+## above max_walkable_rise — so peds only ever appear on reachable ground.
+func _find_spawn(center: Vector3) -> Vector3:
+	var probing: bool = nav != null or snap_to_ground
+	var attempts: int = walkable_attempts if probing else 1
 	for _a in attempts:
 		var offset := CrowdDistribution.spawn_offset(
 			spawn_min_radius, spawn_max_radius, _rng.randf(), _rng.randf()
 		)
-		if nav == null:
-			return offset
-		var cell := nav.world_to_cell(center + offset)
-		if not nav.is_blocked(cell.x, cell.y):
-			return offset
+		var pos := center + offset
+		if nav != null:
+			var cell := nav.world_to_cell(pos)
+			if nav.is_blocked(cell.x, cell.y):
+				continue
+		if snap_to_ground:
+			var gy := _ground_probe(pos, center.y)
+			if is_nan(gy) or gy > center.y + max_walkable_rise:
+				continue  # void or rooftop
+			pos.y = gy
+		else:
+			pos.y = center.y
+		return pos
 	return Vector3.INF
 
 
@@ -143,21 +154,19 @@ func _apply_variety(ped: Node3D) -> void:
 		ped.run_speed = ped.run_speed * gait
 
 
-## Raycast straight down through (x, z) to find the ground height, so a ped
-## stands on whatever surface is under its spawn point. Falls back to the
-## player's height when snapping is off or the probe misses everything (e.g. a
-## spawn point hanging over a gap), which keeps gravity to do the rest.
-func _ground_y(at: Vector3, fallback_y: float) -> float:
-	if not snap_to_ground:
-		return fallback_y
+## Raycast straight down through (x, z) for the ground height under a candidate
+## spawn. Returns the hit Y, or NAN when nothing is hit within the probe window
+## (a void) so the caller can reject that candidate. The space state can be null
+## for a frame before the director is fully in the tree; treat that as a miss.
+func _ground_probe(at: Vector3, base_y: float) -> float:
 	var space := get_world_3d().direct_space_state
 	if space == null:
-		return fallback_y
-	var from := Vector3(at.x, fallback_y + ground_probe_up, at.z)
-	var to := Vector3(at.x, fallback_y - ground_probe_down, at.z)
+		return NAN
+	var from := Vector3(at.x, base_y + ground_probe_up, at.z)
+	var to := Vector3(at.x, base_y - ground_probe_down, at.z)
 	var query := PhysicsRayQueryParameters3D.create(from, to, ground_mask)
 	var hit := space.intersect_ray(query)
-	return hit.position.y if hit.has("position") else fallback_y
+	return hit.position.y if hit.has("position") else NAN
 
 
 ## Current live crowd size — handy for a streaming-debug HUD and for tests that
