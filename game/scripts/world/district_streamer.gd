@@ -21,6 +21,7 @@ var _accum: float = 0.0
 
 
 func _ready() -> void:
+	add_to_group("district_streamer")
 	var manifest := _load(manifest_path)
 	for d in manifest.get("districts", []):
 		var off: Dictionary = d.get("world_offset", {"x": 0, "z": 0})
@@ -35,6 +36,15 @@ func _ready() -> void:
 			)
 		)
 	_update()  # resolve once on spawn so the starting district is present immediately
+
+
+## Sorted-on-read by the HUD; presence in the dict means loaded.
+func resident_names() -> Array:
+	return _resident.keys()
+
+
+func district_count() -> int:
+	return _districts.size()
 
 
 func _physics_process(delta: float) -> void:

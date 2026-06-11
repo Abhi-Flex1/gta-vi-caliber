@@ -18,14 +18,6 @@ config (`game/project.godot`). Action an item, then delete it from this file.
   the district scene — don't re-add a second clock). Worldgen `DayNight`
   should migrate to SkyModel when that branch merges.
 
-## Open: streetlight night toggle (small, anyone)
-
-District lamp heads are always-emissive props now. Wire their visibility or
-emission to `world_night_amount` (e.g. a tiny script in the lamp container
-polling the global once a second, or SkyController gaining the group toggle
-TimeOfDay had). TimeOfDay's hysteresis thresholds in DaylightMath are the
-reference behavior, unit-tested.
-
 ## Open: sandbox.tscn sky + UI wiring (owner of the UI suite)
 
 sandbox.tscn's working-tree edit (sky + ocean + HUD + pause menu) depends on
