@@ -60,7 +60,7 @@ double CrowdSteering::get_neighbor_radius() const {
     return neighbor_radius;
 }
 void CrowdSteering::set_max_force(double p_v) {
-    max_force = p_v;
+    max_force = p_v > 0.0 ? p_v : 0.0; // negative would flip the steering direction
 }
 double CrowdSteering::get_max_force() const {
     return max_force;
@@ -75,9 +75,15 @@ Vector2 CrowdSteering::steer(const Vector2 &p_self_pos, const Vector2 &p_self_ve
         const Vector2 v = p_neighbor_positions[i];
         positions.push_back(Vec2{v.x, v.y});
     }
+    // The arrays are parallel (velocity[i] belongs to position[i]). Only take
+    // velocities that pair with an actual position so a malformed/short/long
+    // velocity array can't feed alignment phantom headings (Codex review).
     std::vector<Vec2> velocities;
-    velocities.reserve(static_cast<size_t>(p_neighbor_velocities.size()));
-    for (int64_t i = 0; i < p_neighbor_velocities.size(); ++i) {
+    const int64_t paired = p_neighbor_positions.size() < p_neighbor_velocities.size()
+            ? p_neighbor_positions.size()
+            : p_neighbor_velocities.size();
+    velocities.reserve(static_cast<size_t>(paired));
+    for (int64_t i = 0; i < paired; ++i) {
         const Vector2 v = p_neighbor_velocities[i];
         velocities.push_back(Vec2{v.x, v.y});
     }

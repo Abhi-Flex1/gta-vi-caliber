@@ -29,6 +29,9 @@ inline Vec2 normalize(Vec2 a) {
 }
 
 inline Vec2 clamp_len(Vec2 a, double max_len) {
+    if (max_len <= 0.0) {
+        return Vec2{0.0, 0.0}; // no force budget — never flip direction
+    }
     const double l = length(a);
     if (l > max_len && l > 1e-9) {
         return Vec2{a.x * max_len / l, a.z * max_len / l};

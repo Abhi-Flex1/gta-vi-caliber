@@ -259,6 +259,13 @@ static void test_empty_neighbors_zero_force() {
     CHECK(length(alignment(none)) < 1e-9);
 }
 
+static void test_clamp_len_negative_budget_is_zero() {
+    using namespace worldcore_crowd;
+    // Negative max_len must not flip direction (Codex): no budget -> zero force.
+    Vec2 f = clamp_len(Vec2{5.0, 0.0}, -8.0);
+    CHECK(length(f) < 1e-9);
+}
+
 int main() {
     test_version_is_consistent();
     test_sum_of_squares();
@@ -282,6 +289,7 @@ int main() {
     test_alignment_is_average_heading();
     test_combine_clamps_to_max_force();
     test_empty_neighbors_zero_force();
+    test_clamp_len_negative_budget_is_zero();
     if (failures > 0) {
         std::fprintf(stderr, "engine tests: %d failure(s)\n", failures);
         return 1;
