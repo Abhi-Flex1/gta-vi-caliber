@@ -188,6 +188,116 @@ static func clean_ring_open(path: PackedVector2Array) -> PackedVector2Array:
 	return out
 
 
+## Two raised concrete sidewalk strips flanking a road polyline: a vertical curb
+## face at the gutter rising to curb_h, then a flat walking top extending
+## walk_width outward. The inner edge sits at road_width*0.5 so it meets the road
+## ribbon with no gap. Per-segment quads like road_ribbon; the sidewalk shader is
+## cull_disabled, so a single winding is fine for both sides. UVs: U across the
+## strip (0 at the curb face .. 1 at the outer edge), V metres along the
+## centreline — mesh-local, so it stays stable under FloatingOrigin shifts.
+static func sidewalk_ribbon(
+	path: PackedVector2Array, road_width: float, walk_width: float, curb_h: float, base_y: float
+) -> Dictionary:
+	var pts := clean_ring_open(path)
+	if pts.size() < 2:
+		return {}
+	var inner := road_width * 0.5
+	var outer := inner + walk_width
+	var curb_frac := curb_h / (curb_h + walk_width)
+	var v := PackedVector3Array()
+	var n := PackedVector3Array()
+	var idx := PackedInt32Array()
+	var uv := PackedVector2Array()
+	var along := 0.0
+	for i in range(pts.size() - 1):
+		var a := pts[i]
+		var b := pts[i + 1]
+		var d := b - a
+		var seg := d.length()
+		if seg < 0.001:
+			continue
+		d /= seg
+		var s := Vector2(-d.y, d.x)
+		for side_sign in [1.0, -1.0]:
+			var sd := s * float(side_sign)
+			var toroad := Vector3(-sd.x, 0.0, -sd.y)
+			var gi_a := _side_pt(a, sd, inner, base_y)
+			var gi_b := _side_pt(b, sd, inner, base_y)
+			var li_a := _side_pt(a, sd, inner, base_y + curb_h)
+			var li_b := _side_pt(b, sd, inner, base_y + curb_h)
+			var lo_a := _side_pt(a, sd, outer, base_y + curb_h)
+			var lo_b := _side_pt(b, sd, outer, base_y + curb_h)
+			# Curb face (vertical), normal toward the road.
+			_sw_quad(
+				v,
+				n,
+				idx,
+				uv,
+				gi_a,
+				gi_b,
+				li_b,
+				li_a,
+				toroad,
+				Vector2(0.0, along),
+				Vector2(0.0, along + seg),
+				Vector2(curb_frac, along + seg),
+				Vector2(curb_frac, along)
+			)
+			# Walking top (horizontal), normal up.
+			_sw_quad(
+				v,
+				n,
+				idx,
+				uv,
+				li_a,
+				li_b,
+				lo_b,
+				lo_a,
+				UP,
+				Vector2(curb_frac, along),
+				Vector2(curb_frac, along + seg),
+				Vector2(1.0, along + seg),
+				Vector2(1.0, along)
+			)
+		along += seg
+	return {"vertices": v, "normals": n, "indices": idx, "uvs": uv}
+
+
+## Offset a 2D centreline point sideways by `off` metres and lift to height y.
+static func _side_pt(p: Vector2, side: Vector2, off: float, y: float) -> Vector3:
+	return Vector3(p.x + side.x * off, y, p.y + side.y * off)
+
+
+## Append one quad (two tris, shared face normal, 4 UVs) into the sidewalk arrays.
+static func _sw_quad(
+	v: PackedVector3Array,
+	n: PackedVector3Array,
+	idx: PackedInt32Array,
+	uv: PackedVector2Array,
+	p0: Vector3,
+	p1: Vector3,
+	p2: Vector3,
+	p3: Vector3,
+	nrm: Vector3,
+	u0: Vector2,
+	u1: Vector2,
+	u2: Vector2,
+	u3: Vector2
+) -> void:
+	var bi := v.size()
+	v.append(p0)
+	v.append(p1)
+	v.append(p2)
+	v.append(p3)
+	for _k in 4:
+		n.append(nrm)
+	uv.append(u0)
+	uv.append(u1)
+	uv.append(u2)
+	uv.append(u3)
+	idx.append_array([bi, bi + 2, bi + 1, bi, bi + 3, bi + 2])
+
+
 ## Pack a geometry Dictionary into an ArrayMesh surface. Empty dict → null.
 ## Optional "uvs" / "colors" keys ride along into the matching ARRAY_* slots
 ## (road paint coordinates, per-building facade tints).

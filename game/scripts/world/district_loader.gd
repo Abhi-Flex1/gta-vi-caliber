@@ -37,6 +37,7 @@ const STREETLIGHT_RADIUS_M: float = 250.0
 var _building_mat: Material
 var _roof_mat: StandardMaterial3D
 var _road_mat: Material
+var _sidewalk_mat: Material
 
 
 func _ready() -> void:
@@ -56,6 +57,7 @@ func _ready() -> void:
 	var built_buildings := _build_buildings(data.get("buildings", []), proj)
 	_build_rooftops(data.get("buildings", []), proj)
 	_build_roads(data.get("roads", []), proj)
+	_build_sidewalks(data.get("roads", []), proj)
 	if build_streetlights:
 		_build_streetlights(data.get("roads", []), proj)
 	_build_trees(data.get("roads", []), proj)
@@ -241,6 +243,7 @@ func _build_street_furniture(roads: Array, proj: GeoProjection) -> void:
 
 	var container := Node3D.new()
 	container.name = "StreetFurniture"
+	container.position.y = 0.15  # sit props on the raised sidewalk, not the gutter
 	add_child(container)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 99
@@ -341,6 +344,7 @@ func _build_streetlights(roads: Array, proj: GeoProjection) -> void:
 
 	var container := Node3D.new()
 	container.name = "StreetLights"
+	container.position.y = 0.15  # poles rise from the raised sidewalk
 	add_child(container)
 	# All lamp heads share lamp_mat, so one switch fades them all with day/night.
 	var switch := StreetlightSwitch.new()
@@ -466,6 +470,40 @@ func _build_roads(roads: Array, proj: GeoProjection) -> void:
 	add_child(mi)
 
 
+## Raised concrete sidewalks flanking the wider roads — real curb geometry so the
+## street reads as a kerbed avenue, not a flat painted floor. Merged into one
+## MeshInstance3D (one draw call) like the roads. Narrow alleys/footways (<6 m)
+## are skipped so they don't get double curbs.
+func _build_sidewalks(roads: Array, proj: GeoProjection) -> void:
+	var verts := PackedVector3Array()
+	var norms := PackedVector3Array()
+	var idx := PackedInt32Array()
+	var uvs := PackedVector2Array()
+
+	for r in roads:
+		var w := float(r.get("width_m", 0.0))
+		if w < 6.0:
+			continue
+		var walk_width := 2.4 if w >= 10.0 else 1.8
+		var path := _project_ring(r["path"], proj)
+		var geo := CityBuilder.sidewalk_ribbon(path, w, walk_width, 0.15, 0.0)
+		if geo.is_empty():
+			continue
+		_append_geo(verts, norms, idx, geo)
+		uvs.append_array(geo["uvs"])
+
+	if verts.is_empty():
+		return
+	var mesh := CityBuilder.arrays_to_mesh(
+		{"vertices": verts, "normals": norms, "indices": idx, "uvs": uvs}
+	)
+	mesh.surface_set_material(0, _sidewalk_mat)
+	var mi := MeshInstance3D.new()
+	mi.name = "Sidewalks"
+	mi.mesh = mesh
+	add_child(mi)
+
+
 ## Spawn a flat ground tile covering the district's projected footprint so the
 ## player and vehicles have something to stand on, wherever the district sits in
 ## the shared world.
@@ -552,6 +590,7 @@ func _make_materials() -> void:
 	# night_mix uniform through set_night_amount.)
 	_building_mat = _shader_or_fallback("res://shaders/facade.gdshader", Color(0.62, 0.63, 0.66))
 	_road_mat = _shader_or_fallback("res://shaders/road.gdshader", Color(0.33, 0.32, 0.31))
+	_sidewalk_mat = _shader_or_fallback("res://shaders/sidewalk.gdshader", Color(0.62, 0.60, 0.56))
 
 	_roof_mat = StandardMaterial3D.new()
 	_roof_mat.albedo_color = Color(0.4, 0.41, 0.45)

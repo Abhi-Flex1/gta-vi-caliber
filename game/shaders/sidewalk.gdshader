@@ -1,0 +1,53 @@
+shader_type spatial;
+render_mode cull_disabled;
+// Procedural concrete sidewalk — no textures. Expansion-joint grooves (one
+// transverse every panel_len metres, one longitudinal down the walking top), a
+// distinct curb-face tint band, and faint patch noise so long runs don't read
+// flat. UV: U across the strip (0 at the curb face .. 1 at the outer edge),
+// V metres along the centreline — mesh-local, so the pattern is stable under
+// FloatingOrigin shifts and streaming.
+
+uniform vec3 concrete_color : source_color = vec3(0.62, 0.60, 0.56);
+uniform vec3 joint_color : source_color = vec3(0.40, 0.39, 0.37);
+uniform vec3 curb_color : source_color = vec3(0.70, 0.68, 0.64);
+// Expansion-joint spacing along the walk, metres.
+uniform float panel_len = 1.5;
+// Joint groove width, metres.
+uniform float joint_w = 0.06;
+// U fraction occupied by the vertical curb face (curb_h / (curb_h + walk_width)).
+uniform float curb_frac = 0.06;
+
+varying vec2 v_uv;
+
+float hash21(vec2 p) {
+	p = fract(p * vec2(127.13, 311.77));
+	p += dot(p, p + 41.23);
+	return fract(p.x * p.y);
+}
+
+void fragment() {
+	float u = v_uv.x;
+	float along = v_uv.y;
+
+	// Low-frequency tonal patches across the slabs.
+	float patch = (hash21(floor(vec2(along * 0.8, u * 4.0))) - 0.5) * 0.05;
+	vec3 col = concrete_color + vec3(patch);
+
+	// On the walking top only (u above the curb band):
+	float on_top = step(curb_frac, u);
+	// Transverse expansion joints: distance (metres) to the nearest panel line.
+	float tm = min(fract(along / panel_len), 1.0 - fract(along / panel_len)) * panel_len;
+	float tj = (1.0 - smoothstep(joint_w * 0.5, joint_w, tm)) * on_top;
+	// One longitudinal joint near the middle of the walking top.
+	float lj = (1.0 - smoothstep(0.02, 0.035, abs(u - 0.55))) * on_top;
+	float joint = max(tj, lj);
+	col = mix(col, joint_color, joint * 0.7);
+
+	// Curb face: brighter painted/worn lip, distinct from the top plane.
+	float curb = 1.0 - smoothstep(curb_frac, curb_frac + 0.01, u);
+	col = mix(col, curb_color + vec3(patch), curb);
+
+	ALBEDO = col;
+	ROUGHNESS = 0.93;
+	METALLIC = 0.0;
+}
