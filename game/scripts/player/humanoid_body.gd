@@ -222,8 +222,15 @@ func _build_materials() -> void:
 	else:
 		_skin.albedo_texture = HumanoidTextures.skin_albedo()
 
-	_shirt = _fabric(shirt_color, 0.82, 0.12)
-	_pants = _fabric(pants_color, 0.9, 0.06)
+	# Cotton tints to each shirt colour (keeps crowd variety + adds knit detail);
+	# denim shows its own indigo with a light tint so it isn't crushed to black.
+	_shirt = _fabric(shirt_color, 0.82, 0.12, load("res://assets/textures/cotton.png") as Texture2D)
+	_pants = _fabric(
+		pants_color.lerp(Color.WHITE, 0.55),
+		0.9,
+		0.06,
+		load("res://assets/textures/denim.png") as Texture2D
+	)
 	_jacket = _fabric(Color(0.075, 0.082, 0.086), 0.78, 0.16)
 	_glove = _leather(Color(0.025, 0.023, 0.022), 0.62)
 	_strap = _leather(Color(0.06, 0.044, 0.034), 0.68)
@@ -514,7 +521,9 @@ func _rig_float(rig: Node, prop: String, fallback: float) -> float:
 	return float(v) if v != null else fallback
 
 
-func _fabric(color: Color, roughness: float, rim: float) -> StandardMaterial3D:
+func _fabric(
+	color: Color, roughness: float, rim: float, albedo_tex: Texture2D = null
+) -> StandardMaterial3D:
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = color
 	mat.roughness = roughness
@@ -523,7 +532,13 @@ func _fabric(color: Color, roughness: float, rim: float) -> StandardMaterial3D:
 	mat.rim = rim
 	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	_apply_detail_normal(mat, HumanoidTextures.fabric_normal(), 0.6, 11.0)
-	mat.albedo_texture = HumanoidTextures.fabric_albedo()
+	if albedo_tex != null:
+		# Photoreal cloth (denim/cotton from Codex image gen, docs/ASSETS.md),
+		# tiled larger than the procedural weave so the real fabric reads at scale.
+		mat.albedo_texture = albedo_tex
+		mat.uv1_scale = Vector3(4.0, 4.0, 4.0)
+	else:
+		mat.albedo_texture = HumanoidTextures.fabric_albedo()
 	return mat
 
 
