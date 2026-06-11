@@ -132,6 +132,15 @@ static void test_should_impostor_threshold() {
     CHECK(should_impostor(10.0, 500.0, fov, 1080.0, 32.0));
 }
 
+static void test_degenerate_fov_keeps_mesh() {
+    using worldcore_impostor::projected_radius_px;
+    using worldcore_impostor::should_impostor;
+    // Near-zero FOV (extreme zoom) => object huge on screen => keep the mesh,
+    // never swap to the impostor. Guards the Codex-found edge case.
+    CHECK(projected_radius_px(10.0, 500.0, 1e-12, 1080.0) >= 1080.0);
+    CHECK(!should_impostor(10.0, 500.0, 1e-12, 1080.0, 32.0));
+}
+
 int main() {
     test_version_is_consistent();
     test_sum_of_squares();
@@ -143,6 +152,7 @@ int main() {
     test_atlas_cell_clamps();
     test_projected_radius_shrinks_with_distance();
     test_should_impostor_threshold();
+    test_degenerate_fov_keeps_mesh();
     if (failures > 0) {
         std::fprintf(stderr, "engine tests: %d failure(s)\n", failures);
         return 1;

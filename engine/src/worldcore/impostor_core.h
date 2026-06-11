@@ -62,7 +62,10 @@ inline double projected_radius_px(
     }
     const double half_extent = distance * std::tan(fov_y_rad * 0.5);
     if (half_extent <= 1e-9) {
-        return 0.0;
+        // Degenerate / near-zero FOV (extreme zoom) makes objects appear huge,
+        // not tiny — return a large radius so should_impostor keeps the full
+        // mesh rather than wrongly swapping in the low-detail impostor.
+        return viewport_h;
     }
     return (radius / half_extent) * (viewport_h * 0.5);
 }
