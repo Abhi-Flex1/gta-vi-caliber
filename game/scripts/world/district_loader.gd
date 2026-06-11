@@ -60,6 +60,7 @@ func _ready() -> void:
 	_build_sidewalks(data.get("roads", []), proj)
 	if build_streetlights:
 		_build_streetlights(data.get("roads", []), proj)
+	_build_palms(data.get("roads", []), proj)
 	_build_trees(data.get("roads", []), proj)
 	_build_street_furniture(data.get("roads", []), proj)
 	if place_player:
@@ -298,13 +299,13 @@ func _build_trees(roads: Array, proj: GeoProjection) -> void:
 
 	var placed := 0
 	for r in roads:
-		if placed >= 120:
+		if placed >= 55:
 			break
 		if float(r.get("width_m", 0.0)) < 9.0:
 			continue
 		var path := _project_ring(r["path"], proj)
-		for p in StreetLight.sample_along(path, 26.0, float(r["width_m"]) * 0.5 + 2.6):
-			if placed >= 120:
+		for p in StreetLight.sample_along(path, 36.0, float(r["width_m"]) * 0.5 + 2.6):
+			if placed >= 55:
 				break
 			var tree := Node3D.new()
 			tree.position = Vector3(p.x, 0.0, p.y)
@@ -322,6 +323,72 @@ func _build_trees(roads: Array, proj: GeoProjection) -> void:
 			tree.add_child(crown)
 			container.add_child(tree)
 			placed += 1
+
+
+## Palm-lined avenues — the signature Miami streetscape. Trunks and frond crowns
+## are two MultiMeshes sharing one per-instance transform list, so hundreds of
+## palms cost two draw calls. The crown mesh is authored at the trunk top so the
+## same transform places both. Denser + on more roads than the broadleaf trees.
+func _build_palms(roads: Array, proj: GeoProjection) -> void:
+	var trunk_mesh := TreeMesh.to_mesh(TreeMesh.palm_trunk(9.0))
+	var crown_mesh := TreeMesh.to_mesh(TreeMesh.palm_crown(11, 3.0, 9.0))
+	if trunk_mesh == null or crown_mesh == null:
+		return
+	var bark := StandardMaterial3D.new()
+	bark.albedo_color = Color(0.55, 0.47, 0.36)  # pale grey-brown palm bark
+	bark.roughness = 0.9
+	var frond := StandardMaterial3D.new()
+	frond.albedo_color = Color(0.30, 0.49, 0.22)  # tropical frond green
+	frond.roughness = 0.85
+	frond.cull_mode = BaseMaterial3D.CULL_DISABLED
+	frond.backlight = Color(0.10, 0.16, 0.07)  # soft leaf translucency in sun
+
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 9151
+	var transforms: Array[Transform3D] = []
+	for r in roads:
+		if transforms.size() >= 900:
+			break
+		var width := float(r.get("width_m", 0.0))
+		if width < 7.0:
+			continue
+		var path := _project_ring(r["path"], proj)
+		var kerb := width * 0.5 + 2.2
+		# Wide avenues get palms on BOTH kerbs (a palm-lined boulevard); narrower
+		# streets get a single row.
+		var sides: Array[float] = [kerb]
+		if width >= 9.0:
+			sides.append(-kerb)
+		for off in sides:
+			for p in StreetLight.sample_along(path, 18.0, off):
+				if transforms.size() >= 900:
+					break
+				var s := rng.randf_range(0.82, 1.3)
+				var basis := Basis.from_euler(Vector3(0.0, rng.randf() * TAU, 0.0)).scaled(
+					Vector3(s, s, s)
+				)
+				transforms.append(Transform3D(basis, Vector3(p.x, 0.0, p.y)))
+
+	if transforms.is_empty():
+		return
+	_add_palm_layer(trunk_mesh, bark, transforms, "PalmTrunks")
+	_add_palm_layer(crown_mesh, frond, transforms, "PalmCrowns")
+
+
+func _add_palm_layer(
+	mesh: Mesh, mat: Material, transforms: Array[Transform3D], node_name: String
+) -> void:
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.mesh = mesh
+	mm.instance_count = transforms.size()
+	for i in transforms.size():
+		mm.set_instance_transform(i, transforms[i])
+	var mmi := MultiMeshInstance3D.new()
+	mmi.name = node_name
+	mmi.multimesh = mm
+	mmi.material_override = mat
+	add_child(mmi)
 
 
 ## Drop emissive lamp posts along the major roads (kerb side, ~42 m apart). They

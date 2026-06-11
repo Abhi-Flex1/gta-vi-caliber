@@ -35,6 +35,67 @@ static func canopy(radius: float = 1.5) -> Dictionary:
 	return geo
 
 
+## Tall, slim palm trunk (royal/coconut palm). Base at y=0 up to `height`, with a
+## gentle taper and a faint base swell. The crown is authored separately at
+## `height` so one instance transform places trunk and fronds together
+## (DistrictLoader MultiMeshes them).
+static func palm_trunk(
+	height: float = 9.0, base_radius: float = 0.22, top_radius: float = 0.14
+) -> Dictionary:
+	var rings: Array = []
+	var count: int = 9
+	for i in count + 1:
+		var t: float = float(i) / float(count)
+		var r: float = lerpf(base_radius, top_radius, t) * (1.0 + 0.12 * (1.0 - t) * (1.0 - t))
+		rings.append(Vector3(t * height, r, r))
+	return _loft(rings, 9)
+
+
+## A single drooping palm frond: a flat blade along +X, widest in the middle and
+## tapering to a tip, curving downward in -Y (quadratic droop). Two-sided (the
+## leaf material disables culling), so it reads from both faces.
+static func frond(
+	length: float = 3.0, base_half: float = 0.17, droop: float = 1.7, segments: int = 6
+) -> Dictionary:
+	var verts := PackedVector3Array()
+	var indices := PackedInt32Array()
+	for i in segments + 1:
+		var t: float = float(i) / float(segments)
+		var x: float = t * length
+		var y: float = -droop * t * t  # tip droops down
+		var w: float = base_half * sin(clampf(t, 0.04, 1.0) * PI)  # leaf-shaped width
+		verts.append(Vector3(x, y, w))
+		verts.append(Vector3(x, y, -w))
+	for i in segments:
+		var a: int = i * 2
+		indices.append_array([a, a + 1, a + 2, a + 2, a + 1, a + 3])
+	return {"vertices": verts, "normals": _smooth_normals(verts, indices), "indices": indices}
+
+
+## A palm crown: a radial fan of fronds pitched up at the base then drooping, sat
+## at height `top_y`, plus a small central nub for the growing shoot.
+static func palm_crown(count: int = 11, length: float = 3.0, top_y: float = 9.0) -> Dictionary:
+	var geo := {
+		"vertices": PackedVector3Array(),
+		"normals": PackedVector3Array(),
+		"indices": PackedInt32Array()
+	}
+	var lift := Vector3(0.0, top_y, 0.0)
+	for j in count:
+		var f := frond(length, 0.17, 1.7)
+		var pitch: float = 0.5 - 0.5 * (float(j % 3) / 3.0)  # ~0.16..0.5 rad upward
+		var yaw: float = float(j) / float(count) * TAU
+		var basis := Basis(Vector3.UP, yaw) * Basis(Vector3.BACK, pitch)
+		var fv: PackedVector3Array = f["vertices"]
+		for k in fv.size():
+			fv[k] = basis * fv[k] + lift
+		f["vertices"] = fv
+		f["normals"] = _smooth_normals(fv, f["indices"])
+		_merge(geo, f)
+	_merge(geo, _blob(0.32, lift))  # central crown nub
+	return geo
+
+
 ## A squashed-sphere foliage blob centred at `offset`.
 static func _blob(radius: float, offset: Vector3) -> Dictionary:
 	var rings: Array = []
