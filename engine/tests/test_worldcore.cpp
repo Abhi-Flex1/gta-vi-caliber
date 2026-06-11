@@ -184,6 +184,36 @@ static void test_spatial_hash_excludes_corner_square() {
     CHECK(near.empty());
 }
 
+static void test_spatial_hash_negative_coords() {
+    // cell_key must handle negative cells (Codex: signed left-shift was UB).
+    worldcore_spatial::SpatialHash2D h(8.0);
+    h.insert(1, -20.0, -33.0);
+    h.insert(2, -19.0, -33.0); // ~1 m away
+    auto near = h.query_radius(-20.0, -33.0, 3.0);
+    bool has1 = false, has2 = false;
+    for (int id : near) {
+        if (id == 1) has1 = true;
+        if (id == 2) has2 = true;
+    }
+    CHECK(has1 && has2);
+}
+
+static void test_spatial_hash_reinsert_is_upsert() {
+    // Re-inserting an id moves it; it must not appear twice or linger at the old
+    // spot (Codex: duplicate-insert leaked stale bucket entries).
+    worldcore_spatial::SpatialHash2D h(8.0);
+    h.insert(1, 0.0, 0.0);
+    h.insert(1, 50.0, 50.0); // move far
+    CHECK(h.size() == 1);
+    CHECK(h.query_radius(0.0, 0.0, 5.0).empty()); // gone from old cell
+    auto at_new = h.query_radius(50.0, 50.0, 5.0);
+    int count1 = 0;
+    for (int id : at_new) {
+        if (id == 1) ++count1;
+    }
+    CHECK(count1 == 1); // present exactly once, not duplicated
+}
+
 int main() {
     test_version_is_consistent();
     test_sum_of_squares();
@@ -199,6 +229,8 @@ int main() {
     test_spatial_hash_radius_query();
     test_spatial_hash_crosses_cell_boundary();
     test_spatial_hash_excludes_corner_square();
+    test_spatial_hash_negative_coords();
+    test_spatial_hash_reinsert_is_upsert();
     if (failures > 0) {
         std::fprintf(stderr, "engine tests: %d failure(s)\n", failures);
         return 1;

@@ -15,9 +15,14 @@
 
 namespace worldcore_spatial {
 
-// Pack a 2D integer cell coordinate into one 64-bit key.
+// Pack a 2D integer cell coordinate into one 64-bit key. Build it in unsigned
+// space — left-shifting a negative *signed* value is undefined behavior, and
+// world cells are routinely negative. cx -> high 32 bits, cz -> low 32 bits, so
+// the mapping stays collision-free across the full int32 range.
 inline int64_t cell_key(int cx, int cz) {
-    return (static_cast<int64_t>(cx) << 32) ^ (static_cast<int64_t>(static_cast<uint32_t>(cz)));
+    const uint64_t ux = static_cast<uint32_t>(cx);
+    const uint64_t uz = static_cast<uint32_t>(cz);
+    return static_cast<int64_t>((ux << 32) | uz);
 }
 
 struct SpatialHash2D {
@@ -37,7 +42,24 @@ struct SpatialHash2D {
         cz = static_cast<int>(std::floor(z / cell_size));
     }
 
+    // Upsert: insert the id at (x,z), or move it there if already present.
+    // Re-inserting an existing id first drops its stale bucket entry, so the same
+    // id can never appear twice in a query and an agent can be re-placed each
+    // frame without clear(). (clear()+rebuild is still the common usage.)
     void insert(int id, double x, double z) {
+        const auto existing = positions.find(id);
+        if (existing != positions.end()) {
+            int ocx, ocz;
+            cell_of(existing->second.first, existing->second.second, ocx, ocz);
+            std::vector<int> &old_bucket = cells[cell_key(ocx, ocz)];
+            for (size_t i = 0; i < old_bucket.size(); ++i) {
+                if (old_bucket[i] == id) {
+                    old_bucket[i] = old_bucket.back();
+                    old_bucket.pop_back();
+                    break;
+                }
+            }
+        }
         int cx, cz;
         cell_of(x, z, cx, cz);
         cells[cell_key(cx, cz)].push_back(id);
