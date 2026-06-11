@@ -10,6 +10,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/debug_hud.tscn" id="2_hud"]
 [ext_resource type="PackedScene" path="res://scenes/npc/citizen.tscn" id="3_cit"]
 [ext_resource type="Script" path="res://scripts/npc/city_director.gd" id="4_dir"]
+[ext_resource type="Script" path="res://scripts/world/day_night_cycle.gd" id="5_daynight"]
 
 [sub_resource type="ProceduralSkyMaterial" id="sky_mat"]
 sky_horizon_color = Color(0.66, 0.67, 0.69, 1)
@@ -84,6 +85,11 @@ shape = SubResource("ground_shape")
 script = ExtResource("4_dir")
 start_hour = 8.0
 day_length_sec = 180.0
+
+[node name="DayNightCycle" type="Node3D" parent="."]
+script = ExtResource("5_daynight")
+sun_path = NodePath("../Sun")
+environment_path = NodePath("../WorldEnvironment")
 
 [node name="Office" type="MeshInstance3D" parent="."]
 transform = Transform3D(8, 0, 0, 0, 14, 0, 0, 0, 8, 20, 7, -20)
