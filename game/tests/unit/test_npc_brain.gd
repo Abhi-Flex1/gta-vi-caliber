@@ -44,6 +44,18 @@ func test_flee_dir_points_away_from_threat() -> bool:
 	return d.is_equal_approx(Vector3(1, 0, 0))
 
 
+func test_pursue_dir_points_toward_target() -> bool:
+	# Target at +x, self at origin → pursue toward +x (opposite of flee).
+	var d := NpcBrain.pursue_dir(Vector3(0, 0, 0), Vector3(5, 0, 0))
+	return d.is_equal_approx(Vector3(1, 0, 0))
+
+
+func test_pursue_and_flee_are_opposite() -> bool:
+	var self_pos := Vector3(2, 0, 3)
+	var other := Vector3(-4, 0, 9)
+	return NpcBrain.pursue_dir(self_pos, other).is_equal_approx(-NpcBrain.flee_dir(self_pos, other))
+
+
 func test_enters_flee_when_threat_close_and_active() -> bool:
 	return NpcBrain.next_state(NpcBrain.State.WANDER, true, 4.0, 8.0, 14.0) == NpcBrain.State.FLEE
 

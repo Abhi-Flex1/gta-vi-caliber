@@ -53,7 +53,7 @@ Goal: walk or drive 4 km in any direction with no loading screen.
 - [ ] **`engine/`: runtime impostor baker** for distant buildings
 - [x] Floating-origin shift to dodge float precision at distance
 - [ ] Streaming debug HUD (tiles resident, VRAM, frame budget)
-- [ ] Benchmark scene + captured profile checked into `docs/profiles/`
+- [x] Benchmark scene + captured profile checked into `docs/profiles/`
 
 ## M4 — A living district
 
@@ -95,8 +95,8 @@ Goal: the acceptance test — a 90-second in-engine trailer from a release build
 Lives in `engine/`; rules in [ARCHITECTURE.md](ARCHITECTURE.md). Anything
 generically useful is offered upstream to Godot.
 
-- [ ] godot-cpp vendored as submodule + first compiled module on all 3 platforms
-- [ ] CI job building `engine/` and running its C++ tests
+- [x] godot-cpp vendored as submodule + first compiled module on all 3 platforms
+- [x] CI job building `engine/` and running its C++ tests
 - [ ] Streaming module (M3)
 - [ ] Impostor baker (M3)
 - [ ] Crowd/traffic simulation core (M4+, only with profile evidence)
