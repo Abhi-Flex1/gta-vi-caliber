@@ -64,15 +64,29 @@ func heal(amount: float) -> void:
 	changed.emit(_model.fraction())
 
 
+## Add body armor from a pickup; ignored while dead.
+func add_armor(amount: float) -> void:
+	if _dead:
+		return
+	_model.add_armor(amount)
+	changed.emit(_model.fraction())
+
+
+func armor_fraction() -> float:
+	return _model.armor_fraction()
+
+
 ## Snapshot for SaveManager.
 func serialize() -> Dictionary:
-	return {"health": _model.health}
+	return {"health": _model.health, "armor": _model.armor}
 
 
 func restore(data: Variant) -> void:
 	if typeof(data) != TYPE_DICTIONARY or not (data as Dictionary).has("health"):
 		return
-	_model.health = clampf(float((data as Dictionary)["health"]), 0.0, _model.max_health)
+	var dict := data as Dictionary
+	_model.health = clampf(float(dict["health"]), 0.0, _model.max_health)
+	_model.armor = clampf(float(dict.get("armor", 0.0)), 0.0, _model.max_armor)
 	_dead = _model.is_dead()
 	changed.emit(_model.fraction())
 

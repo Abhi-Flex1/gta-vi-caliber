@@ -76,4 +76,9 @@ func _update_health() -> void:
 		return
 	var dead: bool = _player_health.is_dead()
 	_status.text = "WASTED" if dead else ""
-	_health.text = "HP %d" % int(round(_player_health.fraction() * 100.0))
+	var text := "HP %d" % int(round(_player_health.fraction() * 100.0))
+	if _player_health.has_method("armor_fraction"):
+		var armor := _player_health.armor_fraction()
+		if armor > 0.0:
+			text += "   AR %d" % int(round(armor * 100.0))
+	_health.text = text

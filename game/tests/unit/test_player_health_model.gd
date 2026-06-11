@@ -88,6 +88,40 @@ func test_heal_ignores_negative() -> bool:
 	return is_equal_approx(h.health, 60.0)
 
 
+func test_armor_absorbs_before_health() -> bool:
+	var h := PlayerHealthModel.new(100.0)
+	h.add_armor(50.0)
+	h.apply(30.0)
+	return is_equal_approx(h.armor, 20.0) and is_equal_approx(h.health, 100.0)
+
+
+func test_damage_overflows_armor_into_health() -> bool:
+	var h := PlayerHealthModel.new(100.0)
+	h.add_armor(20.0)
+	h.apply(50.0)
+	return is_equal_approx(h.armor, 0.0) and is_equal_approx(h.health, 70.0)
+
+
+func test_add_armor_caps_at_max() -> bool:
+	var h := PlayerHealthModel.new(100.0, 10.0, 5.0, 80.0)
+	h.add_armor(200.0)
+	return is_equal_approx(h.armor, 80.0)
+
+
+func test_armor_fraction() -> bool:
+	var h := PlayerHealthModel.new(100.0, 10.0, 5.0, 100.0)
+	h.add_armor(40.0)
+	return is_equal_approx(h.armor_fraction(), 0.4)
+
+
+func test_revive_clears_armor() -> bool:
+	var h := PlayerHealthModel.new(80.0)
+	h.add_armor(50.0)
+	h.apply(80.0)
+	h.revive()
+	return is_equal_approx(h.health, 80.0) and is_equal_approx(h.armor, 0.0)
+
+
 func test_revive_restores_full() -> bool:
 	var h := PlayerHealthModel.new(80.0)
 	h.apply(80.0)

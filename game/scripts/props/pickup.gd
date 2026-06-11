@@ -11,7 +11,10 @@ extends Area3D
 
 signal collected
 
+## "health" heals, "armor" grants body armor.
+@export var kind: String = "health"
 @export var heal_amount: float = 40.0
+@export var armor_amount: float = 50.0
 @export var respawn_delay: float = 12.0
 @export var spin_speed: float = 1.6
 @export var bob_height: float = 0.14
@@ -51,7 +54,17 @@ func _on_body_entered(body: Node) -> void:
 func _grant() -> bool:
 	var granted := false
 	for health in get_tree().get_nodes_in_group("player_health"):
-		if health.has_method("heal") and health.has_method("fraction") and health.fraction() < 1.0:
+		if kind == "armor":
+			if (
+				health.has_method("add_armor")
+				and health.has_method("armor_fraction")
+				and health.armor_fraction() < 1.0
+			):
+				health.add_armor(armor_amount)
+				granted = true
+		elif (
+			health.has_method("heal") and health.has_method("fraction") and health.fraction() < 1.0
+		):
 			health.heal(heal_amount)
 			granted = true
 	return granted

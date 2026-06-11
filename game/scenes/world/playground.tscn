@@ -13,6 +13,7 @@
 [ext_resource type="Script" path="res://scripts/systems/save_manager.gd" id="11_save"]
 [ext_resource type="Script" path="res://scripts/combat/melee_controller.gd" id="12_melee"]
 [ext_resource type="PackedScene" path="res://scenes/props/medkit.tscn" id="13_medkit"]
+[ext_resource type="PackedScene" path="res://scenes/props/armor.tscn" id="14_armor"]
 
 [sub_resource type="ProceduralSkyMaterial" id="sky_mat"]
 sky_horizon_color = Color(0.66, 0.67, 0.69, 1)
@@ -398,6 +399,12 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 0, -8)
 
 [node name="Medkit3" parent="Medkits" instance=ExtResource("13_medkit")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 0, -18)
+
+[node name="Armor1" parent="Medkits" instance=ExtResource("14_armor")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, 4)
+
+[node name="Armor2" parent="Medkits" instance=ExtResource("14_armor")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22, 0, 2)
 
 [node name="Police" type="Node3D" parent="."]
 
