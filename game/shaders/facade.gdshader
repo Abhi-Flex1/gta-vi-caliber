@@ -65,10 +65,12 @@ void fragment() {
 
 	// Weathering: low-frequency tone patches, storey ledges, ground grime, and
 	// faint vertical rain streaks under the window line.
-	float patch = (hash21(floor(vec2(u, v) * 0.45) + fseed * 0.7) - 0.5) * 0.14;
-	float streak = (hash21(vec2(floor(u * 0.7), 0.0) + fseed) - 0.5) * 0.05;
+	// Light weathering only — Art-Deco stucco reads as clean pastel, so keep
+	// tone patches/grime subtle or the vivid palette muddies to grey.
+	float patch = (hash21(floor(vec2(u, v) * 0.45) + fseed * 0.7) - 0.5) * 0.07;
+	float streak = (hash21(vec2(floor(u * 0.7), 0.0) + fseed) - 0.5) * 0.035;
 	float ledge = 1.0 - 0.16 * (1.0 - smoothstep(0.0, 0.07, mf.y)) * wall;
-	float grime = 1.0 - 0.28 * (1.0 - smoothstep(0.0, 2.6, v));
+	float grime = 1.0 - 0.13 * (1.0 - smoothstep(0.0, 2.6, v));
 	vec3 mwall_col = (v_tint + vec3(patch + streak)) * ledge * grime;
 	float mgl = 0.6 + 0.7 * hash21(mcell + vec2(fseed + 11.0));
 	float mrecess = 1.0 - 0.45 * smoothstep(0.45, 0.78, mf.y);
@@ -124,6 +126,13 @@ void fragment() {
 	wall_albedo = mix(wall_albedo, vec3(0.03, 0.03, 0.035), ground * sf_frame);
 	wall_rough = mix(wall_rough, 0.12, ground * 0.7);
 	wall_metal = mix(wall_metal, 0.5, ground * 0.5);
+
+	// Art-Deco belt course: a crisp pale trim band capping the storefront level,
+	// a near-universal South Beach Deco cue. Masonry only (glass towers skip it).
+	float belt = smoothstep(5.0, 5.18, v) * (1.0 - smoothstep(5.5, 5.7, v)) * wall * (1.0 - is_glass);
+	wall_albedo = mix(wall_albedo, vec3(0.97, 0.95, 0.90), belt * 0.85);
+	wall_rough = mix(wall_rough, 0.55, belt);
+	wall_metal = mix(wall_metal, 0.0, belt);
 
 	// Roof: darker gravel-toned version of the wall colour.
 	float roof_n = (hash21(floor(v_pos.xz * 0.8)) - 0.5) * 0.06;

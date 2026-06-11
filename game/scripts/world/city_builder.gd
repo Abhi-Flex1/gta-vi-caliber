@@ -10,18 +10,22 @@ extends RefCounted
 
 const UP: Vector3 = Vector3.UP
 
-## Sun-bleached wall palette: worn stucco/concrete tones (VISION.md coastal-city
-## look). building_color() picks per building so blocks don't read as one grey
-## extrusion.
+## Vice City / South Beach Art-Deco palette: vivid tropical pastels (flamingo,
+## turquoise, mint, coral, lavender…) balanced by cream/white so a block reads as
+## a real Deco streetscape, not a candy box. building_color() picks per building
+## so neighbours differ. This is the post-pivot Miami look (see vice-city-pivot);
+## the old sun-bleached LA earth tones were retired here.
 const WALL_PALETTE: Array[Color] = [
-	Color(0.93, 0.89, 0.80),  # bleached white plaster
-	Color(0.87, 0.78, 0.58),  # cream stucco
-	Color(0.80, 0.70, 0.52),  # sandstone
-	Color(0.78, 0.58, 0.45),  # faded terracotta
-	Color(0.72, 0.70, 0.65),  # weathered concrete
-	Color(0.82, 0.66, 0.58),  # dusty rose
-	Color(0.62, 0.70, 0.60),  # faded sage
-	Color(0.60, 0.66, 0.72),  # hazy blue-grey
+	Color(0.97, 0.62, 0.70),  # flamingo pink
+	Color(0.40, 0.82, 0.80),  # turquoise
+	Color(0.66, 0.91, 0.74),  # mint green
+	Color(0.99, 0.67, 0.51),  # coral / salmon
+	Color(0.74, 0.71, 0.93),  # lavender
+	Color(0.56, 0.84, 0.95),  # aqua sky
+	Color(0.99, 0.90, 0.60),  # butter yellow
+	Color(0.99, 0.81, 0.66),  # peach / apricot
+	Color(0.97, 0.94, 0.87),  # deco cream-white
+	Color(0.75, 0.93, 0.87),  # sea-foam
 ]
 
 
