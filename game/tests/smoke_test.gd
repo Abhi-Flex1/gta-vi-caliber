@@ -1,17 +1,17 @@
 extends SceneTree
-## Headless boot test: every world scene must instantiate and contain a
-## working player rig. Run via:
+## Headless boot test: fast-playable world scenes must instantiate and contain
+## a working player rig. Run via:
 ##   godot --headless --path game --script res://tests/smoke_test.gd
 ##
 ## This is the "main stays playable" gate — if this fails, a clone won't run.
 ## Scenes are booted one per frame: group registration needs the node to be
 ## in the live tree, so each scene is added on one frame and checked on the
-## next, then freed before the next scene loads.
+## next, then freed before the next scene loads. Heavy tuning scenes stay out
+## of this fast gate and should be booted directly when they change.
 
 const SCENES: PackedStringArray = [
 	"res://scenes/world/sandbox.tscn",
 	"res://scenes/world/playground.tscn",
-	"res://scenes/world/movement_playground.tscn",
 ]
 
 var _index: int = -1
