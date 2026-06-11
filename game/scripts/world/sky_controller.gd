@@ -77,8 +77,11 @@ func _apply(tod: float) -> void:
 	_update_environment(tod)
 	_update_shader(sun_dir, tod)
 	# Publish night level globally so world materials (e.g. the building facade
-	# shader lighting its windows) share one day/night clock with the sky.
-	RenderingServer.global_shader_parameter_set("world_night_amount", SkyModel.night_amount(tod))
+	# shader lighting its windows) share one day/night clock with the sky — once
+	# to the shader global (GPU) and once to the CPU channel streetlamps read.
+	var night := SkyModel.night_amount(tod)
+	RenderingServer.global_shader_parameter_set("world_night_amount", night)
+	StreetlightSwitch.night_level = night
 
 
 func _orient_sun(sun_dir: Vector3, tod: float) -> void:

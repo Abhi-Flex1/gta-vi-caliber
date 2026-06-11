@@ -38,6 +38,16 @@ static func building_color(id: int) -> Color:
 	)
 
 
+## Per-building "glassiness" seed in [0,1], packed into facade vertex-colour
+## alpha. Tall buildings bias high (reflective glass curtain-wall towers); short
+## ones bias low (masonry/concrete). A stable hash jitter keeps same-height
+## neighbours from reading as identical so a block has material variety.
+static func building_glass_seed(id: int, height_m: float) -> float:
+	var hfrac := clampf(height_m / 100.0, 0.0, 1.0)
+	var rnd := float(absi(hash(id * 2654435761)) & 0xFFFF) / 65535.0
+	return clampf(hfrac * 0.72 + rnd * 0.28, 0.02, 0.98)
+
+
 ## Strip a redundant closing vertex (OSM rings repeat the first point at the end)
 ## and collapse any near-duplicate consecutive points.
 static func clean_ring(ring: PackedVector2Array) -> PackedVector2Array:

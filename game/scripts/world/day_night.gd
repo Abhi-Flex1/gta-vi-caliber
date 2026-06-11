@@ -26,6 +26,12 @@ func _apply() -> void:
 		-GameClock.sun_elevation_deg(_time), GameClock.sun_azimuth_deg(_time), 0.0
 	)
 	light_energy = GameClock.light_energy(_time)
+	# Share one day/night clock with world materials: feed the facade shader's
+	# window-emission global (GPU) and the streetlamp CPU channel so lit windows
+	# and streetlights come on at dusk in this scene too.
+	var night := GameClock.night_amount(_time)
+	RenderingServer.global_shader_parameter_set("world_night_amount", night)
+	StreetlightSwitch.night_level = night
 	if _env == null or _env.environment == null:
 		return
 	var sky := _env.environment.sky

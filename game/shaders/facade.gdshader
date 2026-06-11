@@ -1,25 +1,29 @@
 shader_type spatial;
 render_mode cull_disabled;
-// Procedural building facade — no textures. A window grid is carved out of
-// mesh-LOCAL position (stable under FloatingOrigin shifts, unlike world space):
-// storeys every `floor_height` metres, window bays every `window_step` metres
-// along each wall. Per-building wall tone arrives in vertex COLOR (set by
-// DistrictLoader from CityBuilder.building_color); per-window variation is
-// hashed from the window cell so no two facades read as copy-paste.
+// Procedural building facades — no textures. Mesh-LOCAL position drives the
+// window grid (stable under FloatingOrigin shifts, unlike world space). Per
+// building, vertex COLOR.rgb carries the wall tone and COLOR.a a "glassiness"
+// seed (tall buildings high, short low) set by DistrictLoader from
+// CityBuilder.building_glass_seed. Two facade modes are mixed per building so a
+// block reads as a real mixed-era streetscape, not one extruded material:
+//   * GLASS CURTAIN WALL  — reflective coated glass + opaque spandrel + mullions
+//   * MASONRY / PUNCHED   — warm walls with recessed punched windows
+// Both get a ground-floor storefront band and a hashed set of night-lit windows.
 
 // Day->night driver for window emission (0 = full daylight, 1 = full night).
-// SkyController feeds the world_night_amount global every frame; night_mix
-// stays as a per-material manual override for demos/tests. The larger wins.
+// SkyController feeds the world_night_amount global; night_mix is a per-material
+// manual override for demos/tests. The larger wins.
 global uniform float world_night_amount;
 uniform float night_mix : hint_range(0.0, 1.0) = 0.0;
 // Storey height, metres (downtown mid/high-rise rhythm).
 uniform float floor_height = 3.2;
-// Horizontal distance between window bay centres, metres.
+// Horizontal distance between punched-window bay centres, metres.
 uniform float window_step = 2.7;
 
 varying vec3 v_pos; // mesh-local position
 varying vec3 v_nrm; // mesh-local normal (flat per wall face)
-varying vec3 v_tint; // per-building wall colour from vertex COLOR
+varying vec3 v_tint; // per-building wall colour from vertex COLOR.rgb
+varying float v_glass; // per-building glassiness seed from vertex COLOR.a
 
 float hash21(vec2 p) {
 	p = fract(p * vec2(127.13, 311.77));
@@ -31,6 +35,7 @@ void vertex() {
 	v_pos = VERTEX;
 	v_nrm = NORMAL;
 	v_tint = COLOR.rgb;
+	v_glass = COLOR.a;
 }
 
 void fragment() {
@@ -41,43 +46,106 @@ void fragment() {
 	vec3 tang = normalize(vec3(-v_nrm.z, 0.0, v_nrm.x) + vec3(1e-4, 0.0, 0.0));
 	float u = dot(v_pos, tang);
 	float v = v_pos.y;
-
-	vec2 cell = vec2(floor(u / window_step), floor(v / floor_height));
-	vec2 f = vec2(fract(u / window_step), fract(v / floor_height));
 	// Per-face seed so parallel/opposite facades don't mirror each other.
-	float seed = dot(round(v_nrm.xz * 4.0), vec2(17.0, 59.0)) + v_tint.r * 91.0;
-	float r = hash21(cell + seed);
+	float fseed = dot(round(v_nrm.xz * 4.0), vec2(17.0, 59.0)) + v_tint.r * 91.0;
 
-	// Punched-window slot inside the cell; some cells stay blank wall.
-	float wx = smoothstep(0.30, 0.35, f.x) * (1.0 - smoothstep(0.73, 0.78, f.x));
-	float wy = smoothstep(0.28, 0.33, f.y) * (1.0 - smoothstep(0.76, 0.81, f.y));
-	float win = wx * wy * wall * step(0.12, r);
+	// Glass curtain-wall towers when the packed seed is high (tall buildings);
+	// masonry otherwise. Soft edge so the transition band isn't a hard cutoff.
+	float is_glass = smoothstep(0.46, 0.60, v_glass);
 
-	// Worn stucco: low-frequency tone patches, storey ledge lines, street grime.
-	float patch = (hash21(floor(vec2(u, v) * 0.45) + seed * 0.7) - 0.5) * 0.14;
-	float ledge = 1.0 - 0.16 * (1.0 - smoothstep(0.0, 0.07, f.y)) * wall;
+	// ======================================================================
+	//  MASONRY / PUNCHED-WINDOW WALL
+	// ======================================================================
+	vec2 mcell = vec2(floor(u / window_step), floor(v / floor_height));
+	vec2 mf = vec2(fract(u / window_step), fract(v / floor_height));
+	float mr = hash21(mcell + fseed);
+	float mwx = smoothstep(0.30, 0.35, mf.x) * (1.0 - smoothstep(0.73, 0.78, mf.x));
+	float mwy = smoothstep(0.28, 0.33, mf.y) * (1.0 - smoothstep(0.76, 0.81, mf.y));
+	float mwin = mwx * mwy * wall * step(0.12, mr);
+
+	// Weathering: low-frequency tone patches, storey ledges, ground grime, and
+	// faint vertical rain streaks under the window line.
+	float patch = (hash21(floor(vec2(u, v) * 0.45) + fseed * 0.7) - 0.5) * 0.14;
+	float streak = (hash21(vec2(floor(u * 0.7), 0.0) + fseed) - 0.5) * 0.05;
+	float ledge = 1.0 - 0.16 * (1.0 - smoothstep(0.0, 0.07, mf.y)) * wall;
 	float grime = 1.0 - 0.28 * (1.0 - smoothstep(0.0, 2.6, v));
-	vec3 wall_col = (v_tint + vec3(patch)) * ledge * grime;
+	vec3 mwall_col = (v_tint + vec3(patch + streak)) * ledge * grime;
+	float mgl = 0.6 + 0.7 * hash21(mcell + vec2(fseed + 11.0));
+	float mrecess = 1.0 - 0.45 * smoothstep(0.45, 0.78, mf.y);
+	vec3 mglass_col = vec3(0.10, 0.12, 0.15) * mgl * mrecess;
+	vec3 m_albedo = mix(mwall_col, mglass_col, mwin);
+	float m_rough = mix(0.78 + 0.18 * hash21(mcell - vec2(fseed)), 0.14, mwin);
+	float m_metal = 0.0;
+	float m_spec = mix(0.4, 0.6, mwin);
+
+	// ======================================================================
+	//  GLASS CURTAIN WALL
+	//  Tight mullion grid; each storey = vision glass (upper) over an opaque
+	//  spandrel band (lower). Vision glass is metallic + smooth so it reflects
+	//  the sky radiance and on-screen geometry (SSR) like real coated glass.
+	// ======================================================================
+	float gstep = 1.7; // mullion bay width (m)
+	vec2 gcell = vec2(floor(u / gstep), floor(v / floor_height));
+	vec2 gf = vec2(fract(u / gstep), fract(v / floor_height));
+	float mull = (1.0 - smoothstep(0.06, 0.13, gf.x)) + (1.0 - smoothstep(0.06, 0.13, 1.0 - gf.x))
+		+ (1.0 - smoothstep(0.05, 0.11, gf.y)) + (1.0 - smoothstep(0.05, 0.11, 1.0 - gf.y));
+	mull = clamp(mull, 0.0, 1.0);
+	float spandrel = 1.0 - smoothstep(0.30, 0.36, gf.y); // lower 32% opaque panel
+	// Per-building glass hue: blue / sea-green / bronze coated glass.
+	float hue = hash21(vec2(round(v_tint.g * 97.0), round(v_tint.b * 61.0)));
+	vec3 g_blue = vec3(0.52, 0.62, 0.72);
+	vec3 g_green = vec3(0.46, 0.62, 0.56);
+	vec3 g_bronze = vec3(0.60, 0.50, 0.36);
+	vec3 gtint = hue < 0.4 ? g_blue : (hue < 0.75 ? g_green : g_bronze);
+	float gpv = 0.85 + 0.30 * hash21(gcell + vec2(fseed + 11.0)); // panel variance
+	vec3 vision_col = gtint * gpv;
+	vec3 spandrel_col = gtint * 0.32;
+	vec3 mullion_col = vec3(0.05, 0.055, 0.06);
+	vec3 g_albedo = mix(vision_col, spandrel_col, spandrel);
+	float g_metal = mix(0.92, 0.15, spandrel);
+	float g_rough = mix(0.08, 0.45, spandrel);
+	float g_spec = 0.85;
+	g_albedo = mix(g_albedo, mullion_col, mull);
+	g_metal = mix(g_metal, 0.5, mull);
+	g_rough = mix(g_rough, 0.5, mull);
+
+	// ======================================================================
+	//  Blend the two wall classes, then lay a ground-floor storefront over them.
+	// ======================================================================
+	vec3 wall_albedo = mix(m_albedo, g_albedo, is_glass);
+	float wall_rough = mix(m_rough, g_rough, is_glass);
+	float wall_metal = mix(m_metal, g_metal, is_glass);
+	float wall_spec = mix(m_spec, g_spec, is_glass);
+
+	// Storefront band: bottom ~5 m gets tall dark glass with wide mullion bays.
+	float ground = (1.0 - smoothstep(4.0, 5.2, v)) * wall;
+	float sf_frame = 1.0 - smoothstep(0.0, 0.16, fract(u / 3.4));
+	wall_albedo = mix(wall_albedo, vec3(0.07, 0.08, 0.10), ground * 0.85);
+	wall_albedo = mix(wall_albedo, vec3(0.03, 0.03, 0.035), ground * sf_frame);
+	wall_rough = mix(wall_rough, 0.12, ground * 0.7);
+	wall_metal = mix(wall_metal, 0.5, ground * 0.5);
 
 	// Roof: darker gravel-toned version of the wall colour.
 	float roof_n = (hash21(floor(v_pos.xz * 0.8)) - 0.5) * 0.06;
 	vec3 roof_col = v_tint * 0.45 + vec3(roof_n);
-	vec3 base_col = mix(roof_col, wall_col, wall);
 
-	// Glass: cool and dark, per-cell brightness so floors don't strobe evenly,
-	// with a recess shadow under the lintel so windows read as punched-in.
-	float gl = 0.6 + 0.7 * hash21(cell + vec2(seed + 11.0));
-	float recess = 1.0 - 0.45 * smoothstep(0.45, 0.78, f.y);
-	vec3 glass_col = vec3(0.10, 0.12, 0.15) * gl * recess;
+	ALBEDO = mix(roof_col, wall_albedo, wall);
+	ROUGHNESS = mix(0.95, wall_rough, wall);
+	METALLIC = wall_metal * wall;
+	SPECULAR = mix(0.3, wall_spec, wall);
 
-	ALBEDO = mix(base_col, glass_col, win);
-	ROUGHNESS = mix(0.78 + 0.18 * hash21(cell - vec2(seed)), 0.14, win);
-	METALLIC = 0.0;
-	SPECULAR = mix(0.4, 0.6, win);
-
-	// Night life: a hashed subset of rooms lights up, each its own warmth.
-	float lit = step(0.62, hash21(cell + vec2(seed + 47.0)));
-	vec3 lamp = mix(vec3(1.0, 0.82, 0.55), vec3(0.95, 0.93, 0.85), hash21(cell + vec2(3.0)));
+	// ======================================================================
+	//  Night life: a hashed subset of windows lights up. Punched windows on
+	//  masonry, vision panes on glass, plus warm storefront glow at street level.
+	// ======================================================================
 	float night = max(night_mix, world_night_amount);
-	EMISSION = lamp * win * lit * night * (1.2 + 1.6 * hash21(cell + vec2(seed + 5.0)));
+	float mlit = step(0.62, hash21(mcell + vec2(fseed + 47.0))) * mwin;
+	float gpane = (1.0 - spandrel) * (1.0 - mull) * wall;
+	float glit = step(0.55, hash21(gcell + vec2(fseed + 47.0))) * gpane;
+	float lit = mix(mlit, glit, is_glass);
+	vec3 lamp = mix(vec3(1.0, 0.82, 0.55), vec3(0.95, 0.93, 0.85), hash21(mcell + vec2(3.0)));
+	float sflit = ground * (1.0 - sf_frame) * wall;
+	vec3 emis = lamp * lit * (1.2 + 1.6 * hash21(mcell + vec2(fseed + 5.0)))
+		+ vec3(1.0, 0.86, 0.6) * sflit * 1.6;
+	EMISSION = emis * night;
 }

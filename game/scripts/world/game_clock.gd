@@ -30,6 +30,14 @@ static func light_energy(hour: float) -> float:
 	return clampf(elevation / 30.0, 0.0, 1.0) * 1.2
 
 
+## 0 in daylight .. 1 at night, ramping smoothly across twilight by sun height so
+## window lights and streetlamps fade in/out instead of snapping at the horizon.
+## Full night below ~-6° elevation, full day above ~+6°.
+static func night_amount(hour: float) -> float:
+	var elevation := sun_elevation_deg(hour)
+	return clampf((6.0 - elevation) / 12.0, 0.0, 1.0)
+
+
 ## Horizon tint: dark blue at night, warm at dawn/dusk, pale blue at midday.
 static func horizon_color(hour: float) -> Color:
 	var elevation := sun_elevation_deg(hour)

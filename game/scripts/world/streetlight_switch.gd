@@ -6,8 +6,11 @@ extends Node
 ## the whole world) and drives the emission each frame. The pure mapping is in
 ## lamp_energy(); attach with a material + its lit energy via setup().
 
-## Global shader parameter SkyController publishes: 0 = full day, 1 = full night.
-const NIGHT_PARAM: StringName = &"world_night_amount"
+## CPU-side day/night level published by the scene's day/night driver
+## (SkyController / DayNight) every frame: 0 = full day, 1 = full night. Read here
+## instead of RenderingServer.global_shader_parameter_get, which is editor-only
+## (errors + tanks performance when called per-frame in a running game).
+static var night_level: float = 0.0
 
 var _material: StandardMaterial3D = null
 var _full_energy: float = 2.5
@@ -28,7 +31,4 @@ func setup(material: StandardMaterial3D, full_energy: float) -> void:
 func _process(_delta: float) -> void:
 	if _material == null:
 		return
-	# The global is unset until SkyController publishes it; treat absent as day.
-	var raw: Variant = RenderingServer.global_shader_parameter_get(NIGHT_PARAM)
-	var night: float = raw if raw is float else 0.0
-	_material.emission_energy_multiplier = lamp_energy(night, _full_energy)
+	_material.emission_energy_multiplier = lamp_energy(night_level, _full_energy)

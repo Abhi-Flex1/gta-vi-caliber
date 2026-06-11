@@ -329,7 +329,11 @@ func _build_buildings(buildings: Array, proj: GeoProjection) -> int:
 			continue
 		_append_geo(verts, norms, idx, geo)
 		# Per-building wall tint, read by the facade shader as vertex COLOR.
-		var tint := CityBuilder.building_color(int(b.get("id", meshed)))
+		var bid := int(b.get("id", meshed))
+		var tint := CityBuilder.building_color(bid)
+		# Glassiness seed packed into vertex-colour alpha: tall buildings bias
+		# toward reflective glass curtain-wall, short ones toward masonry.
+		tint.a = CityBuilder.building_glass_seed(bid, float(b["height_m"]))
 		for _i in (geo["vertices"] as PackedVector3Array).size():
 			colors.append(tint)
 		meshed += 1

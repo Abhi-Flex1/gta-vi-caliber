@@ -13,23 +13,54 @@
 [ext_resource type="Script" path="res://scripts/ui/streaming_hud.gd" id="9_shud"]
 
 [sub_resource type="ProceduralSkyMaterial" id="sky_mat"]
-sky_top_color = Color(0.38, 0.52, 0.74, 1)
-sky_horizon_color = Color(0.7, 0.72, 0.73, 1)
-ground_horizon_color = Color(0.7, 0.72, 0.73, 1)
-ground_bottom_color = Color(0.52, 0.52, 0.5, 1)
+sky_top_color = Color(0.16, 0.33, 0.62, 1)
+sky_horizon_color = Color(0.74, 0.78, 0.8, 1)
+sky_curve = 0.12
+sky_energy_multiplier = 1.1
+ground_horizon_color = Color(0.74, 0.74, 0.72, 1)
+ground_bottom_color = Color(0.42, 0.42, 0.4, 1)
+sun_angle_max = 12.0
+sun_curve = 0.08
 
 [sub_resource type="Sky" id="sky"]
 sky_material = SubResource("sky_mat")
 
+; Premium streamed-world environment (CinematicEnvironment.enhance, no SDFGI:
+; SDFGI flickers as districts page in). Sky-sourced ambient + SSR so glass
+; curtain-walls mirror the sky/street; SSAO/SSIL contact + bounce; ACES grade.
 [sub_resource type="Environment" id="env"]
 background_mode = 2
 sky = SubResource("sky")
-tonemap_mode = 2
+ambient_light_source = 3
+reflected_light_source = 2
+tonemap_mode = 3
+tonemap_white = 6.0
 ssao_enabled = true
+ssao_radius = 3.0
+ssao_intensity = 2.2
+ssao_power = 1.5
+ssil_enabled = true
+ssr_enabled = true
+ssr_max_steps = 48
+ssr_fade_in = 0.15
+ssr_fade_out = 2.0
+ssr_depth_tolerance = 0.2
 glow_enabled = true
+glow_intensity = 0.7
+glow_bloom = 0.12
+glow_hdr_threshold = 1.1
 fog_enabled = true
-fog_light_color = Color(0.74, 0.77, 0.8, 1)
-fog_density = 0.0006
+fog_light_color = Color(0.74, 0.79, 0.86, 1)
+fog_density = 0.0008
+fog_sky_affect = 0.2
+fog_aerial_perspective = 0.5
+volumetric_fog_enabled = true
+volumetric_fog_density = 0.002
+volumetric_fog_albedo = Color(0.82, 0.86, 0.92, 1)
+adjustment_enabled = true
+adjustment_contrast = 1.08
+adjustment_saturation = 1.14
+adjustment_brightness = 1.01
 
 [node name="LosAngelesStreamed" type="Node3D" groups=["world"]]
 

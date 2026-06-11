@@ -33,3 +33,12 @@ func test_horizon_is_dark_at_night_pale_at_noon() -> bool:
 	var night := GameClock.horizon_color(0.0)
 	var noon := GameClock.horizon_color(12.0)
 	return night.v < 0.2 and noon.v > 0.6
+
+
+func test_night_amount_full_at_midnight_zero_at_noon() -> bool:
+	return (
+		is_equal_approx(GameClock.night_amount(0.0), 1.0)
+		and is_equal_approx(GameClock.night_amount(12.0), 0.0)
+		and GameClock.night_amount(6.0) > 0.4
+		and GameClock.night_amount(6.0) < 0.6
+	)
