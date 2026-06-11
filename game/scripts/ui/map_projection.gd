@@ -33,3 +33,15 @@ static func clamp_to_ring(map_point: Vector2, radius: float) -> Vector2:
 	if map_point.length() <= radius:
 		return map_point
 	return map_point.normalized() * radius
+
+
+## Metres-per-pixel that fits a world area of `world_extent` (metres, XZ) into a
+## `view_px` viewport with `margin_px` of padding, preserving aspect (uses the
+## tighter axis). For the full-screen map's auto-zoom-to-fit.
+static func fit_meters_per_pixel(
+	world_extent: Vector2, view_px: Vector2, margin_px: float = 0.0
+) -> float:
+	var avail := Vector2(
+		maxf(view_px.x - 2.0 * margin_px, 1.0), maxf(view_px.y - 2.0 * margin_px, 1.0)
+	)
+	return maxf(maxf(world_extent.x / avail.x, world_extent.y / avail.y), 0.0001)

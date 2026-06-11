@@ -43,3 +43,18 @@ func test_clamp_passes_inside_blips() -> bool:
 func test_clamp_pins_outside_blips_to_rim() -> bool:
 	var clamped := MapProjection.clamp_to_ring(Vector2(100, 0), 8.0)
 	return absf(clamped.length() - 8.0) < 0.001 and clamped.x > 0.0
+
+
+func test_fit_uses_the_tighter_axis() -> bool:
+	# 200×100 m into a 400×400 px view: 0.5 vs 0.25 m/px -> take 0.5 so it fits.
+	return (
+		absf(MapProjection.fit_meters_per_pixel(Vector2(200, 100), Vector2(400, 400)) - 0.5) < 0.001
+	)
+
+
+func test_fit_accounts_for_margin() -> bool:
+	# 360 px avail after 20 px margins each side; 360 m wide -> 1.0 m/px.
+	return (
+		absf(MapProjection.fit_meters_per_pixel(Vector2(360, 10), Vector2(400, 400), 20.0) - 1.0)
+		< 0.001
+	)
