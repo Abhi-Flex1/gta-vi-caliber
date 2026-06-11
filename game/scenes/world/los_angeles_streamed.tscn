@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 ; Los Angeles via the M3 district streamer: districts page in and out around the
 ; player from the world manifest, so the map scales to all of LA without loading
@@ -8,6 +8,7 @@
 [ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="1_player"]
 [ext_resource type="PackedScene" path="res://scenes/ui/debug_hud.tscn" id="2_hud"]
 [ext_resource type="Script" path="res://scripts/world/district_streamer.gd" id="3_streamer"]
+[ext_resource type="Script" path="res://scripts/world/day_night.gd" id="4_daynight"]
 
 [sub_resource type="ProceduralSkyMaterial" id="sky_mat"]
 sky_top_color = Color(0.38, 0.52, 0.74, 1)
@@ -38,6 +39,7 @@ transform = Transform3D(0.866025, 0.383022, -0.321394, 0, 0.642788, 0.766044, 0.
 light_energy = 1.1
 shadow_enabled = true
 directional_shadow_max_distance = 600.0
+script = ExtResource("4_daynight")
 
 [node name="Streamer" type="Node3D" parent="."]
 script = ExtResource("3_streamer")
