@@ -53,6 +53,13 @@ func _check_scene(scene_path: String) -> void:
 	if get_nodes_in_group("spawn_points").is_empty():
 		_fail(scene_path, "no spawn points (Marker3D in group 'spawn_points')")
 
+	# A script with a parse error leaves its node script-less while the scene
+	# still instantiates and the groups above still pass — so a broken loader
+	# once shipped a district that silently built nothing. Assert the district
+	# actually constructed its road mesh.
+	if scene_path.contains("districts") and _current.find_child("Roads", true, false) == null:
+		_fail(scene_path, "district built no Roads node — loader script did not run")
+
 
 func _fail(scene_path: String, message: String) -> void:
 	_failures.append("%s: %s" % [scene_path, message])
