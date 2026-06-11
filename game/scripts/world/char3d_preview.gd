@@ -7,7 +7,7 @@ extends Node3D
 ## angle. Untextured for now (clay) — texturing + rigging are the next steps.
 ## Open this scene and press F5, or set it as the run scene.
 
-const MODEL_PATH: String = "res://assets/characters/char_hunyuan.glb"
+const MODEL_PATH: String = "res://assets/characters/char_textured.glb"
 
 var _subject: Node3D
 
@@ -39,12 +39,7 @@ func _ready() -> void:
 	_subject = packed.instantiate() as Node3D
 	add_child(_subject)
 
-	# Neutral clay so the untextured mesh reads as form, not a black silhouette.
-	var clay := StandardMaterial3D.new()
-	clay.albedo_color = Color(0.79, 0.75, 0.71)
-	clay.roughness = 0.55
-	for node in _subject.find_children("*", "MeshInstance3D", true, false):
-		(node as MeshInstance3D).material_override = clay
+	# The GLB carries its own projected photoreal texture — keep it (no override).
 
 	# Stand the figure on the floor (its mesh is centred on the origin).
 	var box := _subject_aabb()
