@@ -173,7 +173,7 @@ func _assign_route(car: TrafficCar, center: Vector3) -> void:
 		return
 	dest.y = car.global_position.y
 	if nav != null:
-		var path := nav.find_path(car.global_position, dest)
+		var path := PathSmoother.simplify_world(nav, nav.find_path(car.global_position, dest))
 		if path.size() >= 2:
 			# Flatten the route onto the car's drive plane.
 			for i in path.size():
