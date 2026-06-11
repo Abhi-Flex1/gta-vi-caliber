@@ -11,12 +11,9 @@ extends SceneTree
 const SCENES: PackedStringArray = [
 	"res://scenes/world/sandbox.tscn",
 	"res://scenes/world/playground.tscn",
-	"res://scenes/world/districts/downtown_la.tscn",
 	"res://scenes/world/ocean_demo.tscn",
-	"res://scenes/world/districts/venice_beach.tscn",
-	"res://scenes/world/districts/hollywood.tscn",
-	"res://scenes/world/los_angeles.tscn",
-	"res://scenes/world/los_angeles_streamed.tscn",
+	"res://scenes/world/miami.tscn",
+	"res://scenes/world/miami_south_beach.tscn",
 ]
 
 var _index: int = -1
