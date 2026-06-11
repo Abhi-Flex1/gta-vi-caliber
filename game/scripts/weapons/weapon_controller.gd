@@ -97,6 +97,43 @@ func hud_state() -> Dictionary:
 	}
 
 
+## Full loadout snapshot for the weapon wheel: one entry per carried weapon in
+## carry order, each {name, ammo, reserve, automatic}. The wheel highlights
+## current_index() and calls equip() when the player picks a slot.
+func loadout() -> Array:
+	var out: Array = []
+	for weapon in _weapons:
+		(
+			out
+			. append(
+				{
+					"name": weapon.stats.display_name,
+					"ammo": weapon.ammo,
+					"reserve": weapon.reserve,
+					"automatic": weapon.stats.automatic,
+				}
+			)
+		)
+	return out
+
+
+## Index of the currently selected weapon within loadout().
+func current_index() -> int:
+	return _index
+
+
+## Equip the weapon at `index` and raise it. Out-of-range indices are ignored,
+## so the wheel can pass a "no change" -1 safely.
+func equip(index: int) -> void:
+	if index < 0 or index >= _weapons.size():
+		return
+	_index = index
+	if not _armed:
+		_set_armed(true)
+	else:
+		_emit_state()
+
+
 ## Put the weapon away (called when entering a vehicle, etc.).
 func force_holster() -> void:
 	if _armed:
@@ -181,6 +218,9 @@ func _apply_damage(weapon: Weapon, origin: Vector3, hit: Dictionary) -> void:
 	collider.take_damage(damage, hit.position, hit.normal)
 	var killed: bool = collider.has_method("is_dead") and collider.is_dead()
 	hit_confirmed.emit(killed)
+	for text in get_tree().get_nodes_in_group("combat_text"):
+		if text.has_method("popup"):
+			text.popup(damage, hit.position, killed)
 	var node := collider as Node
 	if node != null and (node.is_in_group("pedestrians") or node.is_in_group("police")):
 		crime_committed.emit(killed)
