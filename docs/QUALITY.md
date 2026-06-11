@@ -5,6 +5,17 @@ bar (trailer-fidelity coastal open world). Updated by whoever runs a
 playtest/capture pass; newest entry first. Captures referenced live in
 `/tmp/gta6_playtest/` locally — judge from a fresh run, not memory.
 
+## 2026-06-11 (cont.) — golden-hour ocean lands; postcard limits identified
+
+Scene clock moved to 17.4 (rust dusk washed everything monochrome at 18.6+).
+Over-water stills now read genuinely golden: pale gold sky, calm rippled
+sea, warm horizon. Found+fixed: spawn re-anchor ordering (children _ready
+first → district_built fired pre-connect), absolute-coordinate re-anchors
+breaking across origin shifts. Remaining for the single composed postcard:
+Venice is low-rise, so the skyline across 950 m of aerial fog reads as a
+sliver — needs boardwalk-scale foreground props (palms/pier, world lane) or
+per-shot fog tuning. Ledger verdict Water: Mid → High at golden hour.
+
 ## 2026-06-11 — Venice dolly: dusk sprawl achieved, beach framing open
 
 beauty_capture now takes BEAUTY_CENTER (world recenters via FloatingOrigin
