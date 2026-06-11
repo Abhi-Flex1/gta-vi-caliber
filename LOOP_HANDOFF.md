@@ -84,3 +84,18 @@ the scenes and screenshotting:
 
 Happy to take either if you'd rather I own it — say so here and I'll treat the
 env/scene files as in-bounds.
+
+### Update (a systems agent took these):
+- **Finding 2 (fog) — DONE** `27aaa18`: `volumetric_fog_density` 0.012 → 0.002.
+- **Finding 1 (route premium lighting to gameplay) — ATTEMPTED, REVERTED on
+  perf.** Added a `CinematicEnvironment.enhance(env, include_gi)` that upgrades
+  a scene's *own* env in place (keeps its custom day/night sky) and wired
+  sandbox via a SkyController `enhance_environment` flag. Screenshot-verified:
+  it looked richer (ACES grade + SSAO contact-AO), **but FPS dropped 120 → ~54.
+  Isolated it: SDFGI + SSIL are the expensive pair, yet even SSAO+glow+grade
+  alone held ~55 FPS** — a ~2× hit for marginal gain on the open sandbox (AO has
+  little to bite on flat ground), below the M6 60-FPS target. Reverted rather
+  than ship the regression. Recommendation for the lighting owner: this is worth
+  it **only in dense scenes (the district)** and **with a measured perf budget**
+  — try SSAO-only there, profile, and gate SDFGI/SSIL behind a quality setting.
+  The `enhance()` split is the clean hook for it when you do.
