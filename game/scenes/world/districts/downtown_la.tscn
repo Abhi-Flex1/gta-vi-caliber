@@ -55,7 +55,7 @@ fog_sky_affect = 0.3
 fog_aerial_perspective = 0.5
 
 [sub_resource type="StandardMaterial3D" id="ground_mat"]
-albedo_color = Color(0.27, 0.28, 0.3, 1)
+albedo_color = Color(0.51, 0.46, 0.39, 1)
 roughness = 1.0
 
 [sub_resource type="PlaneMesh" id="ground_mesh"]
