@@ -32,4 +32,19 @@ func test_crowd_steering_separates_and_clamps() -> bool:
 	# No neighbours -> zero force.
 	var empty := PackedVector2Array()
 	var idle: Vector2 = cs.call("steer", Vector2(0.0, 0.0), Vector2(0.0, 0.0), empty, empty)
-	return idle.length() < 0.001
+	if idle.length() >= 0.001:
+		return false
+
+	# arrive() heads toward a goal to the +x.
+	cs.set("max_speed", 6.0)
+	var to_goal: Vector2 = cs.call(
+		"arrive", Vector2(0.0, 0.0), Vector2(0.0, 0.0), Vector2(50.0, 0.0), 5.0
+	)
+	if to_goal.x <= 0.0:
+		return false
+
+	# avoid() pushes away from an obstacle to the +x that the agent is inside.
+	var obs := PackedVector2Array([Vector2(2.0, 0.0)])
+	var radii := PackedFloat32Array([3.0])
+	var push: Vector2 = cs.call("avoid", Vector2(0.0, 0.0), obs, radii, 1.0)
+	return push.x < 0.0

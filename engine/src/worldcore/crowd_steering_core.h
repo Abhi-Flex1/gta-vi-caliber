@@ -90,4 +90,48 @@ inline Vec2 combine(Vec2 sep, Vec2 ali, Vec2 coh, double w_sep, double w_ali, do
     return clamp_len(f, max_force);
 }
 
+// Seek: steer toward `target` at full speed (desired velocity minus current).
+inline Vec2 seek(Vec2 self_pos, Vec2 self_vel, Vec2 target, double max_speed) {
+    const Vec2 desired = scale(normalize(sub(target, self_pos)), max_speed);
+    return sub(desired, self_vel);
+}
+
+// Arrive: like seek, but ramp speed down linearly inside `slow_radius` so the
+// agent settles at the target instead of orbiting it. Brakes when on top of it.
+inline Vec2 arrive(
+        Vec2 self_pos, Vec2 self_vel, Vec2 target, double slow_radius, double max_speed) {
+    const Vec2 to_target = sub(target, self_pos);
+    const double dist = length(to_target);
+    if (dist < 1e-6) {
+        return scale(self_vel, -1.0); // already there — kill momentum
+    }
+    double speed = max_speed;
+    if (slow_radius > 1e-6 && dist < slow_radius) {
+        speed = max_speed * (dist / slow_radius);
+    }
+    const Vec2 desired = scale(normalize(to_target), speed);
+    return sub(desired, self_vel);
+}
+
+// Avoid circular obstacles: outward push from each obstacle the agent is inside
+// (radius + margin), weighted by penetration depth. `positions` and `radii` are
+// parallel; the shorter length wins so a malformed pair can't read past the end.
+inline Vec2 avoid_obstacles(Vec2 self_pos, const std::vector<Vec2> &positions,
+        const std::vector<double> &radii, double margin) {
+    Vec2 force{0.0, 0.0};
+    const std::size_t n = positions.size() < radii.size() ? positions.size() : radii.size();
+    for (std::size_t i = 0; i < n; ++i) {
+        const Vec2 d = sub(self_pos, positions[i]);
+        const double dist = length(d);
+        const double safe = radii[i] + margin;
+        if (dist <= 1e-6) {
+            force = add(force, Vec2{1.0, 0.0}); // dead centre — push a fixed way out
+        } else if (dist < safe && safe > 1e-6) {
+            const double penetration = (safe - dist) / safe; // 0..1, deeper = stronger
+            force = add(force, scale(normalize(d), penetration));
+        }
+    }
+    return force;
+}
+
 } // namespace worldcore_crowd

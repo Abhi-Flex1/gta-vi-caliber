@@ -266,6 +266,28 @@ static void test_clamp_len_negative_budget_is_zero() {
     CHECK(length(f) < 1e-9);
 }
 
+static void test_arrive_seeks_then_slows() {
+    using namespace worldcore_crowd;
+    // Far from target (at rest): desired heads toward +x at ~max_speed.
+    Vec2 far = arrive(Vec2{0.0, 0.0}, Vec2{0.0, 0.0}, Vec2{100.0, 0.0}, 5.0, 6.0);
+    CHECK(far.x > 0.0);
+    CHECK(std::fabs(length(far) - 6.0) < 1e-6);
+    // Inside slow_radius the desired speed ramps down, so |force| is smaller.
+    Vec2 near = arrive(Vec2{0.0, 0.0}, Vec2{0.0, 0.0}, Vec2{2.5, 0.0}, 5.0, 6.0);
+    CHECK(length(near) < length(far));
+}
+
+static void test_avoid_pushes_off_obstacle() {
+    using namespace worldcore_crowd;
+    std::vector<Vec2> obstacles = {{2.0, 0.0}}; // obstacle to the +x
+    std::vector<double> radii = {3.0};
+    Vec2 f = avoid_obstacles(Vec2{0.0, 0.0}, obstacles, radii, 1.0); // within 4 of it
+    CHECK(f.x < 0.0); // pushed -x, away
+    // An obstacle far outside radius+margin exerts no force.
+    std::vector<Vec2> faro = {{100.0, 0.0}};
+    CHECK(length(avoid_obstacles(Vec2{0.0, 0.0}, faro, radii, 1.0)) < 1e-9);
+}
+
 int main() {
     test_version_is_consistent();
     test_sum_of_squares();
@@ -290,6 +312,8 @@ int main() {
     test_combine_clamps_to_max_force();
     test_empty_neighbors_zero_force();
     test_clamp_len_negative_budget_is_zero();
+    test_arrive_seeks_then_slows();
+    test_avoid_pushes_off_obstacle();
     if (failures > 0) {
         std::fprintf(stderr, "engine tests: %d failure(s)\n", failures);
         return 1;
