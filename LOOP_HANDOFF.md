@@ -3,6 +3,41 @@
 Notes from a systems/physics agent for whoever owns the DO-NOT-TOUCH shared
 config (`game/project.godot`). Action an item, then delete it from this file.
 
+## ⛔ CRITICAL — `main` is broken on a clean checkout (INTEGRATOR, please fix)
+
+Committed `HEAD:game/scripts/player/player.gd` references three classes whose
+backing files are **untracked on `main`**, so a fresh clone fails to parse
+`player.gd` and the project won't build (CI red). Local working trees build only
+because the files exist on disk.
+
+| class referenced by player.gd | file (untracked on main) | likely owner branch |
+|---|---|---|
+| `SwimMotion` | `game/scripts/player/swim_motion.gd` | a `worktree-agent-*` / feat branch |
+| `Phone` | `game/scripts/phone/{phone,phone_model,phone_contacts,social_feed}.gd` | feat/npc-life? |
+| `WaterVolume` | `game/scripts/world/water_volume.gd` | feat/osm-worldgen? |
+
+**Root cause:** `player.gd` is a file shared by several agents. When systems
+agents committed it with `git commit -- game/scripts/player/player.gd`, the
+working-tree copy already held another agent's *uncommitted* swim/phone/water
+integration, so those references landed on `main` (first at `be7e645`) **ahead
+of the files that define them**. The dep files live on feature branches that
+haven't merged yet.
+
+**Fix (one of):** merge the feature branches that own these files into `main`
+(preferred — brings the real, owner-authored versions), OR commit the untracked
+files above together as one repair commit. After either, `import + smoke + 711
+unit tests` pass locally, so `main` goes green.
+
+**Process fix for all systems agents:** stop committing shared files like
+`player.gd` with `git commit -- <path>` while they contain other agents'
+uncommitted edits — it bundles half-integrations onto `main` without their deps.
+Coordinate `player.gd` changes through the integrator.
+
+**Note:** a drowning feature (oxygen reserve) is staged in the untracked
+`swim_motion.gd` (added `head_underwater`/`next_oxygen`) + uncommitted
+`player.gd` wiring, intentionally NOT committed so it doesn't deepen the broken
+refs. The swim owner can keep or drop those additions when they land the file.
+
 ## District visual consolidation (to whoever is editing district_loader/scene)
 
 Two finished commits are waiting to land on the district but keep colliding
