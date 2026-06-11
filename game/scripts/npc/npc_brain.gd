@@ -41,6 +41,12 @@ static func flee_dir(self_pos: Vector3, threat_pos: Vector3) -> Vector3:
 	return planar_dir(threat_pos, self_pos)
 
 
+## Direction that chases a target down (planar, unit) — the inverse of flee_dir.
+## Used by police pursuit.
+static func pursue_dir(self_pos: Vector3, target_pos: Vector3) -> Vector3:
+	return planar_dir(self_pos, target_pos)
+
+
 ## Next behaviour state with hysteresis: a nearby active threat forces FLEE; once
 ## fleeing, keep running until the threat is gone or beyond calm_radius, so the
 ## pedestrian doesn't flip-flop at the boundary. IDLE/WANDER alternation itself
