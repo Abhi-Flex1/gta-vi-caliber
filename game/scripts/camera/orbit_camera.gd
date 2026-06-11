@@ -47,6 +47,12 @@ const PITCH_MAX: float = 0.5
 @export var dof_blur_amount: float = 0.06
 @export var dof_far_distance: float = 55.0
 @export var dof_far_transition: float = 45.0
+## Auto-recenter: after recenter_delay seconds without look input, the camera
+## eases (recenter_rate rad/s) behind the travel direction while moving faster
+## than recenter_min_speed — so a gamepad player isn't forced to ride the stick.
+@export var recenter_delay: float = 1.0
+@export var recenter_rate: float = 2.2
+@export var recenter_min_speed: float = 1.5
 
 var _pitch: float = 0.0
 var _recoil: float = 0.0
@@ -54,6 +60,7 @@ var _aiming: bool = false
 var _trauma: float = 0.0
 var _shake_time: float = 0.0
 var _shake_noise: FastNoiseLite = null
+var _look_idle: float = 0.0
 
 @onready var _arm: SpringArm3D = $SpringArm
 @onready var _camera: Camera3D = $SpringArm/Camera
@@ -119,9 +126,23 @@ func _physics_process(delta: float) -> void:
 	_camera.fov = CameraFeel.exp_smoothed(_camera.fov, target, smoothing, delta)
 
 	_apply_stick_look(delta)
+	_update_recenter(body, delta)
 	_recoil = move_toward(_recoil, 0.0, recoil_recovery * delta)
 	_arm.rotation.x = clampf(_pitch, PITCH_MIN, PITCH_MAX) + _recoil
 	_update_shake(delta)
+
+
+## After a spell with no look input, ease the yaw behind the player's travel
+## direction (only while moving and not aiming) so the view follows without the
+## player having to steer it — important once a gamepad is driving.
+func _update_recenter(body: CharacterBody3D, delta: float) -> void:
+	_look_idle += delta
+	if _aiming or _look_idle < recenter_delay:
+		return
+	if Vector2(body.velocity.x, body.velocity.z).length() < recenter_min_speed:
+		return
+	var target := CameraFeel.recenter_yaw(body.velocity.x, body.velocity.z)
+	rotation.y = CameraFeel.approach_angle(rotation.y, target, recenter_rate * delta)
 
 
 ## Decay trauma and apply the resulting shake as a small rotation on the leaf
@@ -151,6 +172,7 @@ func _apply_stick_look(delta: float) -> void:
 	var look := StickInput.look_delta(raw, stick_deadzone, stick_exponent, stick_sensitivity, delta)
 	if look == Vector2.ZERO:
 		return
+	_look_idle = 0.0
 	rotation.y -= look.x
 	_pitch = clampf(_pitch - look.y, PITCH_MIN, PITCH_MAX)
 
@@ -161,5 +183,6 @@ func _unhandled_input(event: InputEvent) -> void:
 	var motion := event as InputEventMouseMotion
 	if motion == null:
 		return
+	_look_idle = 0.0
 	rotation.y -= motion.relative.x * sensitivity
 	_pitch = clampf(_pitch - motion.relative.y * sensitivity, PITCH_MIN, PITCH_MAX)

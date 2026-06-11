@@ -24,3 +24,20 @@ static func fov_for_blend(base_fov: float, kick: float, blend: float) -> float:
 ## gives exactly one full step, so feel doesn't change with FPS.
 static func exp_smoothed(current: float, target: float, smoothing: float, delta: float) -> float:
 	return lerpf(current, target, 1.0 - exp(-smoothing * delta))
+
+
+## Camera yaw that looks along a horizontal travel direction — the angle to
+## recenter to so the player runs away from the camera. Matches PlayerMotion's
+## convention (forward input at yaw 0 travels -Z): solving -Z·R(yaw) = velocity
+## gives atan2(-vx, -vz). A zero vector yields 0.
+static func recenter_yaw(velocity_x: float, velocity_z: float) -> float:
+	if is_zero_approx(velocity_x) and is_zero_approx(velocity_z):
+		return 0.0
+	return atan2(-velocity_x, -velocity_z)
+
+
+## Step an angle toward a target along the shortest arc, capped at max_step, so
+## recentering never spins the long way round a ±PI wrap.
+static func approach_angle(current: float, target: float, max_step: float) -> float:
+	var diff := wrapf(target - current, -PI, PI)
+	return current + clampf(diff, -max_step, max_step)
