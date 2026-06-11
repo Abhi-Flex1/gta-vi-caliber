@@ -95,10 +95,10 @@ func _build_rooftops(buildings: Array, proj: GeoProjection) -> void:
 	rng.seed = 7
 	var placed := 0
 	for b in buildings:
-		if placed >= 400:
+		if placed >= 650:
 			break
 		var height := float(b.get("height_m", 0.0))
-		if height < 12.0:
+		if height < 6.0:
 			continue
 		var ring := _project_ring(b["footprint"], proj)
 		if ring.size() < 3:
@@ -127,19 +127,29 @@ func _build_rooftops(buildings: Array, proj: GeoProjection) -> void:
 				)
 			)
 
-		# Antenna mast + always-on red beacon on the real high-rises; otherwise a
-		# rooftop water tank like a typical mid-rise.
+		# Antenna mast + always-on red beacon on the real high-rises; a water tank
+		# on mid-rises; a small stair/elevator bulkhead on the low-rise Deco roofs
+		# so even the two-storey hotels aren't bare flat boxes.
 		if height >= 50.0:
 			var mh := rng.randf_range(8.0, 18.0)
 			mast_tf.append(
 				Transform3D(Basis.from_scale(Vector3(1, mh, 1)), roof + Vector3(0, mh * 0.5, 0))
 			)
 			beacon_tf.append(Transform3D(Basis.IDENTITY, roof + Vector3(0, mh, 0)))
-		else:
+		elif height >= 12.0:
 			tank_tf.append(
 				Transform3D(
 					Basis.IDENTITY,
 					roof + Vector3(rng.randf_range(-2.5, 2.5), 1.1, rng.randf_range(-2.5, 2.5))
+				)
+			)
+		elif ext.x > 4.0 and ext.y > 4.0:
+			var bw := clampf(minf(ext.x, ext.y) * rng.randf_range(0.25, 0.4), 2.0, 5.0)
+			var bh := rng.randf_range(1.8, 2.8)
+			house_tf.append(
+				Transform3D(
+					Basis.from_scale(Vector3(bw, bh, bw)),
+					roof + Vector3(rng.randf_range(-1.0, 1.0), bh * 0.5, rng.randf_range(-1.0, 1.0))
 				)
 			)
 
