@@ -214,16 +214,32 @@ static func neck(height: float = 0.16, radius: float = 0.052) -> Dictionary:
 ## Hair: a thin shell over the upper cranium, a touch proud of the skull, from
 ## the crown down to the brow line. Authored in Head-local space (head centred at
 ## origin) so the builder can parent it straight to the head with no offset.
-static func hair(head_height: float = 0.28, head_width: float = 0.13) -> Dictionary:
+## style: 0 default crop, 1 fuller/bigger, 2 buzz/short, 3 tall volume on top.
+## Lets a crowd wear different hair from one mesh family. Default keeps the hero
+## look so existing no-arg / two-arg callers are unaffected.
+static func hair(head_height: float = 0.28, head_width: float = 0.13, style: int = 0) -> Dictionary:
+	var reach := 0.5
+	var puff := 1.08
+	var lift := 0.0
+	match style:
+		1:
+			reach = 0.54
+			puff = 1.18
+		2:
+			reach = 0.46
+			puff = 1.0
+		3:
+			puff = 1.1
+			lift = 0.06
 	var rings: Array = []
 	var count: int = 12
 	for i in count + 1:
-		var s: float = lerpf(0.0, 0.5, float(i) / float(count))  # crown(pole) → brow
-		var y: float = head_height * 0.5 - s * head_height
+		var s: float = lerpf(0.0, reach, float(i) / float(count))  # crown(pole) → brow
+		var y: float = head_height * 0.5 - s * head_height + lift * (1.0 - s)
 		var jaw: float = lerpf(1.04, 0.86, s)
 		# pow(sin, 0.7) fattens the crown so the top domes over like a beanie
 		# instead of pinching into a witch-hat point.
-		var r: float = head_width * pow(sin(s * PI), 0.7) * jaw * 1.08
+		var r: float = head_width * pow(sin(s * PI), 0.7) * jaw * puff
 		rings.append(Vector3(y, r, r))
 	return lofted(rings, 18)
 

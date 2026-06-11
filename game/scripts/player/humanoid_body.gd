@@ -59,6 +59,11 @@ const ELBOW_AMPLITUDE: float = 0.5
 @export var shoe_color: Color = Color(0.08, 0.08, 0.1)
 @export var hair_color: Color = Color(0.16, 0.11, 0.07)
 @export var eye_color: Color = Color(0.13, 0.09, 0.06)
+## Applies the original Mara Vale hero treatment to the playable rig: charcoal
+## cropped jacket, olive cargos, gloves, boots, strap, pendant, eyebrow scar and
+## silver-streaked asymmetrical hair. Kept procedural so the player remains
+## lightweight until a real authored GLB arrives.
+@export var use_mara_hero_profile: bool = false
 ## When true, a random palette is drawn from the curated crowd swatches above
 ## before the body is built, so a street full of these reads as distinct people
 ## rather than clones. Leave false for the hero player (uses the colors above).
@@ -69,6 +74,12 @@ var _shirt: StandardMaterial3D
 var _pants: StandardMaterial3D
 var _shoe: StandardMaterial3D
 var _hair: StandardMaterial3D
+var _jacket: StandardMaterial3D
+var _glove: StandardMaterial3D
+var _strap: StandardMaterial3D
+var _metal: StandardMaterial3D
+var _scar: StandardMaterial3D
+var _silver_hair: StandardMaterial3D
 var _sclera: StandardMaterial3D
 var _iris: StandardMaterial3D
 var _mouth: StandardMaterial3D
@@ -85,6 +96,8 @@ var _breath_t: float = 0.0
 func _ready() -> void:
 	if randomize_palette:
 		_pick_random_palette()
+	if use_mara_hero_profile:
+		_apply_mara_palette()
 	_build_materials()
 	var rig: Node = get_parent()
 	if rig == null:
@@ -103,6 +116,8 @@ func _ready() -> void:
 	_articulate_arm(rig, "Hips/ShoulderL", "ArmL", "HandL", arm_amp)
 	_articulate_arm(rig, "Hips/ShoulderR", "ArmR", "HandR", arm_amp)
 	_add_head_details(rig)
+	if use_mara_hero_profile:
+		_add_mara_details(rig)
 	_torso = rig.get_node_or_null("Hips/Torso") as MeshInstance3D
 
 
@@ -155,6 +170,15 @@ func _jitter(c: Color, rng: RandomNumberGenerator, amount: float) -> Color:
 	return Color(clampf(c.r + d, 0.0, 1.0), clampf(c.g + d, 0.0, 1.0), clampf(c.b + d, 0.0, 1.0))
 
 
+func _apply_mara_palette() -> void:
+	skin_color = Color(0.70, 0.48, 0.36)
+	shirt_color = Color(0.27, 0.31, 0.34)
+	pants_color = Color(0.18, 0.23, 0.16)
+	shoe_color = Color(0.035, 0.034, 0.035)
+	hair_color = Color(0.045, 0.038, 0.035)
+	eye_color = Color(0.18, 0.12, 0.075)
+
+
 func _build_materials() -> void:
 	_skin = StandardMaterial3D.new()
 	_skin.albedo_color = skin_color
@@ -172,6 +196,22 @@ func _build_materials() -> void:
 
 	_shirt = _fabric(shirt_color, 0.82, 0.12)
 	_pants = _fabric(pants_color, 0.9, 0.06)
+	_jacket = _fabric(Color(0.075, 0.082, 0.086), 0.78, 0.16)
+	_glove = _leather(Color(0.025, 0.023, 0.022), 0.62)
+	_strap = _leather(Color(0.06, 0.044, 0.034), 0.68)
+	_metal = StandardMaterial3D.new()
+	_metal.albedo_color = Color(0.72, 0.52, 0.25)
+	_metal.metallic = 0.75
+	_metal.roughness = 0.36
+	_metal.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_scar = StandardMaterial3D.new()
+	_scar.albedo_color = skin_color.darkened(0.18).lerp(Color(0.64, 0.36, 0.32), 0.45)
+	_scar.roughness = 0.58
+	_scar.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_silver_hair = StandardMaterial3D.new()
+	_silver_hair.albedo_color = Color(0.66, 0.65, 0.62)
+	_silver_hair.roughness = 0.55
+	_silver_hair.cull_mode = BaseMaterial3D.CULL_DISABLED
 
 	_shoe = StandardMaterial3D.new()
 	_shoe.albedo_color = shoe_color
@@ -207,8 +247,14 @@ func _add_head_details(rig: Node) -> void:
 	if head == null:
 		return
 
+	# Crowds wear varied hairstyles; the hero keeps the default crop.
+	var hair_style := 0
+	if randomize_palette:
+		var hrng := RandomNumberGenerator.new()
+		hrng.randomize()
+		hair_style = hrng.randi() % 4
 	var hair := MeshInstance3D.new()
-	hair.mesh = HumanoidMesh.to_mesh(HumanoidMesh.hair())
+	hair.mesh = HumanoidMesh.to_mesh(HumanoidMesh.hair(0.28, 0.13, hair_style))
 	hair.material_override = _hair
 	head.add_child(hair)
 
@@ -235,6 +281,81 @@ func _add_head_details(rig: Node) -> void:
 	mouth.position = Vector3(0.0, -0.09, -0.092)
 	mouth.scale = Vector3(1.9, 0.5, 0.55)
 	head.add_child(mouth)
+
+
+func _add_mara_details(rig: Node) -> void:
+	var hips: Node3D = rig.get_node_or_null("Hips") as Node3D
+	if hips == null:
+		return
+	var jacket := _seg(
+		HumanoidMesh.torso(0.46, 0.272, 0.17, 0.19, 0.135), _jacket, Vector3(0.0, 0.49, -0.006)
+	)
+	jacket.name = "MaraCroppedJacket"
+	hips.add_child(jacket)
+
+	var shirt_panel := _box("MaraVisibleShirt", Vector3(0.15, 0.42, 0.018), _shirt)
+	shirt_panel.position = Vector3(0.0, 0.48, -0.145)
+	hips.add_child(shirt_panel)
+
+	var belt := _box("MaraBelt", Vector3(0.43, 0.035, 0.028), _strap)
+	belt.position = Vector3(0.0, 0.06, -0.005)
+	hips.add_child(belt)
+
+	var strap := _box("MaraMessengerStrap", Vector3(0.055, 0.78, 0.028), _strap)
+	strap.position = Vector3(-0.04, 0.42, -0.17)
+	strap.rotation.z = -0.42
+	hips.add_child(strap)
+
+	var pendant_chain := _box("MaraPendantCord", Vector3(0.012, 0.15, 0.012), _strap)
+	pendant_chain.position = Vector3(0.0, 0.47, -0.18)
+	hips.add_child(pendant_chain)
+
+	var pendant := _sphere(0.025, _metal)
+	pendant.name = "MaraPendant"
+	pendant.position = Vector3(0.0, 0.39, -0.185)
+	pendant.scale = Vector3(0.8, 1.1, 0.25)
+	hips.add_child(pendant)
+
+	_add_cargo_pocket(rig, "Hips/HipL", 1.0)
+	_add_cargo_pocket(rig, "Hips/HipR", -1.0)
+	_add_mara_head_details(rig)
+
+
+func _add_cargo_pocket(rig: Node, hip_path: String, side: float) -> void:
+	var hip: Node3D = rig.get_node_or_null(hip_path) as Node3D
+	if hip == null:
+		return
+	var pocket := _box("MaraCargoPocket", Vector3(0.075, 0.12, 0.028), _pants)
+	pocket.position = Vector3(0.095 * side, -0.28, -0.04)
+	pocket.rotation.z = 0.04 * side
+	hip.add_child(pocket)
+	var flap := _box("MaraCargoPocketFlap", Vector3(0.085, 0.022, 0.032), _jacket)
+	flap.position = Vector3(0.095 * side, -0.215, -0.055)
+	hip.add_child(flap)
+
+
+func _add_mara_head_details(rig: Node) -> void:
+	var head: MeshInstance3D = rig.get_node_or_null("Hips/Head") as MeshInstance3D
+	if head == null:
+		return
+	var bang := _sphere(0.064, _hair)
+	bang.name = "MaraAsymmetricBangs"
+	bang.position = Vector3(-0.045, 0.052, -0.07)
+	bang.rotation.z = -0.32
+	bang.scale = Vector3(1.0, 0.48, 1.25)
+	head.add_child(bang)
+
+	var streak := _sphere(0.022, _silver_hair)
+	streak.name = "MaraSilverHairStreak"
+	streak.position = Vector3(-0.062, 0.043, -0.105)
+	streak.rotation.z = -0.36
+	streak.scale = Vector3(0.48, 1.65, 0.32)
+	head.add_child(streak)
+
+	var scar := _box("MaraEyebrowScar", Vector3(0.009, 0.048, 0.006), _scar)
+	scar.position = Vector3(-0.05, 0.02, -0.121)
+	scar.rotation.z = -0.45
+	head.add_child(scar)
 
 
 func _sphere(radius: float, mat: Material) -> MeshInstance3D:
@@ -297,7 +418,8 @@ func _articulate_arm(
 	elbow.add_child(
 		_seg(HumanoidMesh.limb(0.34, 0.05, 0.048, 0.04, 12, 14), _skin, Vector3(0, -0.155, 0))
 	)
-	elbow.add_child(_seg(HumanoidMesh.hand(), _skin, Vector3(0, -0.33, 0)))
+	var hand_mat: Material = _glove if use_mara_hero_profile else _skin
+	elbow.add_child(_seg(HumanoidMesh.hand(), hand_mat, Vector3(0, -0.33, 0)))
 	_arms.append({"shoulder": shoulder, "elbow": elbow, "amp": amp})
 
 
@@ -306,6 +428,16 @@ func _seg(geo: Dictionary, mat: Material, pos: Vector3) -> MeshInstance3D:
 	mi.mesh = HumanoidMesh.to_mesh(geo)
 	mi.material_override = mat
 	mi.position = pos
+	return mi
+
+
+func _box(node_name: String, size: Vector3, mat: Material) -> MeshInstance3D:
+	var mi := MeshInstance3D.new()
+	var box := BoxMesh.new()
+	box.size = size
+	mi.name = node_name
+	mi.mesh = box
+	mi.material_override = mat
 	return mi
 
 
@@ -329,6 +461,16 @@ func _fabric(color: Color, roughness: float, rim: float) -> StandardMaterial3D:
 	mat.rim = rim
 	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	_apply_detail_normal(mat, HumanoidTextures.fabric_normal(), 0.6, 11.0)
+	return mat
+
+
+func _leather(color: Color, roughness: float) -> StandardMaterial3D:
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	mat.roughness = roughness
+	mat.metallic = 0.0
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_apply_detail_normal(mat, HumanoidTextures.fabric_normal(), 0.3, 18.0)
 	return mat
 
 

@@ -131,3 +131,11 @@ func test_hand_thumb_offsets_to_one_side() -> bool:
 	# The thumb is merged at +x, so the hand reaches further +x than -x.
 	var box := _aabb(HumanoidMesh.hand())
 	return box.position.x + box.size.x > 0.07
+
+
+func test_hair_styles_vary_in_volume() -> bool:
+	# The fuller style (1) must read bigger than the buzz cut (2); default (0)
+	# stays backward-compatible (non-empty).
+	var buzz := _aabb(HumanoidMesh.hair(0.28, 0.13, 2))
+	var fuller := _aabb(HumanoidMesh.hair(0.28, 0.13, 1))
+	return fuller.size.x > buzz.size.x and not HumanoidMesh.hair().is_empty()
