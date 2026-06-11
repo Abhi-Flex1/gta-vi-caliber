@@ -1,50 +1,70 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=9 format=3]
 
-; South Beach, Miami — Vice City heart. Warm sunset grade: golden key light,
-; orange→indigo sky, vibrant saturation. Proof the map pipeline is Florida, not
-; LA — same loader, different real-world coordinates.
+; South Beach, Miami — Vice City heart. Now on the physical sky + SkyController
+; day/night cycle (sun, ambient, world_night_amount window-glow + streetlights all
+; driven by time-of-day): crisp turquoise day → golden hour → neon-lit night.
+; Same loader, real Florida coordinates.
 
 [ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="1_player"]
 [ext_resource type="PackedScene" path="res://scenes/ui/debug_hud.tscn" id="2_hud"]
 [ext_resource type="Script" path="res://scripts/world/district_loader.gd" id="3_loader"]
+[ext_resource type="Shader" path="res://assets/shaders/sky.gdshader" id="4_sky"]
+[ext_resource type="Script" path="res://scripts/world/sky_controller.gd" id="5_daynight"]
 
-[sub_resource type="ProceduralSkyMaterial" id="sky_mat"]
-sky_top_color = Color(0.14, 0.24, 0.52, 1)
-sky_horizon_color = Color(1.0, 0.62, 0.38, 1)
-sky_curve = 0.09
-sky_energy_multiplier = 1.3
-ground_horizon_color = Color(0.95, 0.6, 0.4, 1)
-ground_bottom_color = Color(0.3, 0.26, 0.3, 1)
+[sub_resource type="ShaderMaterial" id="sky_mat"]
+shader = ExtResource("4_sky")
+shader_parameter/sun_direction = Vector3(0.41, 0.81, -0.42)
+shader_parameter/sun_energy = 1.0
+shader_parameter/moon_direction = Vector3(-0.41, -0.81, 0.42)
+shader_parameter/night_amount = 0.0
+shader_parameter/rayleigh_strength = 1.0
+shader_parameter/mie_strength = 1.0
+shader_parameter/mie_eccentricity = 0.76
+shader_parameter/sun_intensity = 22.0
+shader_parameter/exposure = 1.1
+shader_parameter/sun_angular_size = 1.2
+shader_parameter/sun_disk_color = Color(1, 0.95, 0.86, 1)
+shader_parameter/cloud_coverage = 0.5
+shader_parameter/cloud_density = 1.2
+shader_parameter/cloud_height = 1200.0
+shader_parameter/cloud_scale = 0.00055
+shader_parameter/cloud_wind = Vector2(0.014, 0.007)
+shader_parameter/cloud_base_color = Color(0.66, 0.69, 0.74, 1)
+shader_parameter/cloud_lit_color = Color(1, 0.97, 0.9, 1)
+shader_parameter/star_density = 0.18
+shader_parameter/night_zenith = Color(0.012, 0.016, 0.035, 1)
+shader_parameter/moon_color = Color(0.85, 0.88, 0.95, 1)
 
 [sub_resource type="Sky" id="sky"]
 sky_material = SubResource("sky_mat")
+radiance_size = 4
 
 [sub_resource type="Environment" id="env"]
 background_mode = 2
 sky = SubResource("sky")
 ambient_light_source = 3
 ambient_light_energy = 1.0
-ambient_light_color = Color(1.0, 0.82, 0.66, 1)
-tonemap_mode = 4
+reflected_light_source = 2
+tonemap_mode = 3
+tonemap_white = 7.0
 tonemap_exposure = 1.05
-tonemap_white = 8.0
 ssr_enabled = true
 ssr_max_steps = 48
 ssao_enabled = true
 ssao_intensity = 2.2
 ssil_enabled = true
 glow_enabled = true
-glow_intensity = 0.6
-glow_bloom = 0.15
+glow_intensity = 0.65
+glow_bloom = 0.18
 glow_hdr_threshold = 1.0
 fog_enabled = true
-fog_light_color = Color(1.0, 0.72, 0.5, 1)
+fog_light_color = Color(0.85, 0.8, 0.78, 1)
 fog_density = 0.0003
-fog_sky_affect = 0.0
-fog_aerial_perspective = 0.7
+fog_sky_affect = 0.1
+fog_aerial_perspective = 0.5
 adjustment_enabled = true
 adjustment_contrast = 1.1
-adjustment_saturation = 1.28
+adjustment_saturation = 1.26
 
 [node name="MiamiSouthBeach" type="Node3D" groups=["world"]]
 
@@ -53,12 +73,17 @@ environment = SubResource("env")
 
 [node name="Sun" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.94, 0.18, -0.29, 0, 0.85, 0.53, 0.34, -0.5, 0.8, 0, 80, 0)
-light_color = Color(1.0, 0.72, 0.44, 1)
-light_energy = 2.6
+light_color = Color(1.0, 0.86, 0.7, 1)
+light_energy = 2.0
 light_angular_distance = 2.0
 shadow_enabled = true
 shadow_blur = 1.2
 directional_shadow_max_distance = 800.0
+
+[node name="DayNightCycle" type="Node" parent="."]
+script = ExtResource("5_daynight")
+time_of_day = 17.5
+day_length_seconds = 1200.0
 
 [node name="District" type="Node3D" parent="."]
 script = ExtResource("3_loader")
