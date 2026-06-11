@@ -50,19 +50,42 @@ func _start_shot() -> void:
 	if center_env.contains(","):
 		var parts := center_env.split(",")
 		center = Vector3(parts[0].to_float(), 0.0, parts[1].to_float())
-	var points := PackedVector3Array(
-		[
-			center + Vector3(420.0, 180.0, 0.0),
-			center + Vector3(180.0, 110.0, 260.0),
-			center + Vector3(-160.0, 60.0, 200.0),
-			center + Vector3(-180.0, 25.0, -60.0),
-			center + Vector3(-40.0, 8.0, -120.0),
-		]
-	)
-	_camera.play_shot(points, seconds, center + Vector3(0.0, 40.0, 0.0))
+	# BEAUTY_POINTS="x,y,z;x,y,z;..." + BEAUTY_LOOK="x,y,z" replace the whole
+	# move for custom shots (e.g. a shoreline pan); both are absolute, the
+	# center offset is not applied to them.
+	var points := _env_points("BEAUTY_POINTS")
+	var look := _env_vec3("BEAUTY_LOOK", center + Vector3(0.0, 40.0, 0.0))
+	if points.is_empty():
+		points = PackedVector3Array(
+			[
+				center + Vector3(420.0, 180.0, 0.0),
+				center + Vector3(180.0, 110.0, 260.0),
+				center + Vector3(-160.0, 60.0, 200.0),
+				center + Vector3(-180.0, 25.0, -60.0),
+				center + Vector3(-40.0, 8.0, -120.0),
+			]
+		)
+	_camera.play_shot(points, seconds, look)
 	_camera.shot_finished.connect(_on_shot_finished)
 	_shot_started = true
 	_frame = 0
+
+
+func _env_points(name: String) -> PackedVector3Array:
+	var raw := OS.get_environment(name)
+	var points := PackedVector3Array()
+	if raw == "":
+		return points
+	for triple in raw.split(";", false):
+		var parts := triple.split(",")
+		if parts.size() == 3:
+			points.append(Vector3(parts[0].to_float(), parts[1].to_float(), parts[2].to_float()))
+	return points
+
+
+func _env_vec3(name: String, fallback: Vector3) -> Vector3:
+	var pts := _env_points(name)
+	return pts[0] if pts.size() == 1 else fallback
 
 
 func _on_shot_finished() -> void:
