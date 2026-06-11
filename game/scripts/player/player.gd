@@ -55,6 +55,11 @@ signal footstep(surface: String, is_left: bool)
 @export var land_shake_min_speed: float = 4.5
 @export var land_shake_max_speed: float = 16.0
 @export_range(0.0, 1.0) var land_shake_max_trauma: float = 0.5
+## Fall damage: landing downward speed (m/s) below which it's harmless, the speed
+## at which it deals fall_max_damage, and that peak hit (~full health = lethal).
+@export var fall_safe_speed: float = 9.0
+@export var fall_lethal_speed: float = 22.0
+@export var fall_max_damage: float = 100.0
 
 var _time_since_grounded: float = 0.0
 var _time_since_jump_pressed: float = 1.0
@@ -239,7 +244,20 @@ func _update_landing(impact_speed: float) -> void:
 		)
 		if trauma > 0.0:
 			_camera_rig.add_shake(trauma)
+		var damage := PlayerMotion.fall_damage(
+			impact_speed, fall_safe_speed, fall_lethal_speed, fall_max_damage
+		)
+		if damage > 0.0:
+			_apply_fall_damage(damage)
 	_was_on_floor = grounded
+
+
+## Route fall damage through the player's PlayerHealth (group "player_health"),
+## the same public API pickups and weapons use — keeps Player decoupled from it.
+func _apply_fall_damage(amount: float) -> void:
+	for health in get_tree().get_nodes_in_group("player_health"):
+		if health.has_method("take_damage"):
+			health.take_damage(amount)
 
 
 ## Bank ground distance and emit `footstep` each time a full stride is covered,

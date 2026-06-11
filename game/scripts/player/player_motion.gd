@@ -60,6 +60,17 @@ static func should_jump(
 	return time_since_grounded <= coyote_time and time_since_jump_pressed <= buffer_time
 
 
+## Fall damage from a landing's downward speed (m/s): nothing at or below
+## safe_speed, ramping linearly to max_damage at lethal_speed (and clamped there
+## for harder hits). A degenerate range (lethal <= safe) deals nothing.
+static func fall_damage(
+	impact_speed: float, safe_speed: float, lethal_speed: float, max_damage: float
+) -> float:
+	if impact_speed <= safe_speed or lethal_speed <= safe_speed:
+		return 0.0
+	return clampf((impact_speed - safe_speed) / (lethal_speed - safe_speed), 0.0, 1.0) * max_damage
+
+
 ## Downhill slide acceleration (m/s², horizontal) on a floor too steep to stand
 ## on cleanly. `floor_normal` is the contact normal; once its y drops below
 ## max_walk_normal_y (= cos of the steepest stable angle) the character is
