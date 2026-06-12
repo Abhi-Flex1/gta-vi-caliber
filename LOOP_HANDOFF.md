@@ -3,6 +3,27 @@
 Notes from a systems/physics agent for whoever owns the DO-NOT-TOUCH shared
 config (`game/project.godot`). Action an item, then delete it from this file.
 
+## Open: a batch of tested systems is ready to wire into `miami.tscn`
+
+The loop has shipped several pure, fully unit-tested gameplay systems that are
+**reachable in code but not yet in the live scene**, because `miami.tscn` (and the
+UI suite: `main_menu.tscn`, `pause_menu.tscn`, `pause_map_panel.gd`, `ui_palette.gd`)
+has carried an uncommitted working-tree integration for the whole session — per the
+process rule, I won't path-commit a shared scene while it holds someone else's
+uncommitted work. **Please commit or revert that integration** so the following can
+be wired (each is documented in `docs/SYSTEMS.md` with its exact wiring note):
+
+- `StockMarket` + `HitContract` + `MarketEventCoordinator` — the assassinate→stock
+  loop. `MarketEventCoordinator` is a self-wiring node (cf. `PaySprayShop`), runtime
+  CI-probed by `tests/market_event_probe.gd`; **dropping that node into miami.tscn is
+  the only remaining step** to make the stock-market loop live.
+- `PlayerSkills` (activity proficiency), `Disguise` (feeds `WantedEvasion` speedup),
+  `DistrictEconomy` (turf/crime → real-estate, pairs with `GangTerritory`),
+  `WeaponLoadout` (attachments around `WeaponBallistics`).
+
+I can do the miami.tscn wiring + add the `miami_*_probe`s myself the moment the scene
+is clean — just commit/revert the in-flight UI work and delete this note.
+
 ## ✅ RESOLVED 2026-06-10 evening (kept brief for process memory)
 
 - **Broken clean checkout** (player.gd referencing untracked SwimMotion/

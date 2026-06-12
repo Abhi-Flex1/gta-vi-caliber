@@ -44,6 +44,7 @@ Groups the live scene already publishes: `player`, `player_health`,
 | `CombatCover` | cover-point eval | `provides_cover`, `best_cover`, `peek_position`, `is_exposed` | give `CombatAi`/`Police` cover-seeking behaviour |
 | `StealthDetection` | awareness meter | `update(can_see, vis, dt)`, `is_alerted`, `detection_speed` | per-NPC perception atop `CrimeWitness` FOV |
 | `FirePropagation` | spreading fire + fuel burnout | `ignite_intensity`, `update_fires`, `damage_per_second` | molotov/vehicle fire that spreads across flammables |
+| `WeaponLoadout` | attachments (optic/muzzle/mag/grip) tune a weapon | `equip`, `mult_for`, `apply_mult`, `mag_size`, `is_suppressed` | a weapon-mod UI; apply `apply_mult(base, "spread"/"range"/"recoil")` around the `WeaponBallistics` calls, `mag_size` to ammo, `is_suppressed` to witness noise |
 
 ## Vehicles
 
