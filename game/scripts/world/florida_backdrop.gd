@@ -77,6 +77,7 @@ func _ready() -> void:
 	_build_lifeguard_towers()
 	_build_neon_sign()
 	_build_neon_strip()
+	_build_neon_pylon()
 	_build_causeway_traffic()
 	_build_swim_volume()
 
@@ -751,6 +752,15 @@ func _build_causeway_traffic() -> void:
 	var traffic := CausewayTraffic.new()
 	traffic.name = "CausewayTraffic"
 	add_child(traffic)
+
+
+func _build_neon_pylon() -> void:
+	# An animated vintage motel pylon (chasing border + blinking VACANCY) — the
+	# moving neon landmark by the boardwalk.
+	var pylon := NeonPylon.new()
+	pylon.name = "NeonPylon"
+	pylon.position = Vector3(1255.0, land_y, 640.0)
+	add_child(pylon)
 
 
 func _build_neon_strip() -> void:

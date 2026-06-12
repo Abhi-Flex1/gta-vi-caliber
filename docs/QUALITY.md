@@ -5,6 +5,20 @@ bar (trailer-fidelity coastal open world). Updated by whoever runs a
 playtest/capture pass; newest entry first. Captures referenced live in
 `/tmp/gta6_playtest/` locally — judge from a fresh run, not memory.
 
+## 2026-06-12 (cont. 15) — the neon comes alive: animated motel pylon
+
+Track Q (lighting/atmosphere — night + the first ANIMATED neon). The static
+neon signs were missing motion; `NeonPylon` adds it: a tall vintage motel sign
+whose border tubes CHASE around like a marquee, a headline that breathes
+(pulsing glow bar), and a "VACANCY" sub-sign that blinks. Pure emissive +
+per-frame energy animation, no shared-env dependency. Reads as a classic
+Americana neon landmark (`/tmp/pylon.png` — pink SEA BREEZE / cyan MOTEL /
+blinking VACANCY, the chase visible in the varied border-dot brightness). Added
+by the boardwalk via FloridaBackdrop; verified in a NIGHT capture + 4 unit tests
+including animation guards (border chase changes a segment's energy over time,
+VACANCY toggles across its blink cycle). This is the strongest, liveliest night
+element yet — motion is what the neon work needed.
+
 ## 2026-06-12 (cont. 14) — traffic on the bay bridges
 
 Track Q (detail/life), and the first GROUND-level moving content (vs ambient
