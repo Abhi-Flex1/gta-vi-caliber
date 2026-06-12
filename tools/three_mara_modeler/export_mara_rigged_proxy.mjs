@@ -42,7 +42,8 @@ const materials = {
 	leather: material("mara_rigged_black_leather", 0x070707, 0.34, 0.0, 0.5),
 	metal: material("mara_rigged_brass", 0xd0a24a, 0.3, 0.78, 0.0),
 	hair: material("mara_rigged_dark_hair", 0x171312, 0.52, 0.0, 0.16),
-	eye: material("mara_rigged_brown_eyes", 0x24160d, 0.4, 0.0, 0.0)
+	eye: material("mara_rigged_brown_eyes", 0x24160d, 0.4, 0.0, 0.0),
+	eyeWet: material("mara_rigged_eye_wetline", 0xf6eee5, 0.2, 0.0, 0.7)
 };
 
 buildRiggedMara(scene, materials);
@@ -81,35 +82,34 @@ function buildRiggedMara(root, mats) {
 	const skeleton = new THREE.Skeleton(rig.orderedBones);
 	const skinnedMeshes = [
 		skinnedTube("mara_rigged_jacket", [
-			ring([0, 0.84, 0], 0.22, 0.105, "MaraHips"),
-			ring([0, 1.02, -0.006], 0.24, 0.12, "MaraSpine"),
-			ring([0, 1.27, -0.01], 0.235, 0.135, "MaraChest"),
-			ring([0, 1.45, -0.005], 0.18, 0.105, "MaraChest")
-		], rig.index, mats.jacket, 24),
+			ring([0, 0.82, 0.006], 0.215, 0.1, "MaraHips"),
+			ring([0, 0.94, -0.002], 0.232, 0.112, "MaraHips"),
+			ring([0, 1.08, -0.012], 0.246, 0.126, "MaraSpine"),
+			ring([0, 1.24, -0.018], 0.238, 0.138, "MaraChest"),
+			ring([0, 1.39, -0.014], 0.205, 0.123, "MaraChest"),
+			ring([0, 1.47, -0.006], 0.165, 0.098, "MaraChest")
+		], rig.index, mats.jacket, 32),
 		skinnedTube("mara_rigged_shirt_panel", [
 			ring([0, 0.92, -0.11], 0.105, 0.02, "MaraHips"),
 			ring([0, 1.15, -0.135], 0.12, 0.025, "MaraSpine"),
 			ring([0, 1.38, -0.13], 0.1, 0.022, "MaraChest")
 		], rig.index, mats.shirt, 8),
 		skinnedTube("mara_rigged_trousers", [
-			ring([0, 0.62, 0], 0.18, 0.09, "MaraHips"),
-			ring([0, 0.82, 0], 0.215, 0.11, "MaraHips")
-		], rig.index, mats.fabric, 20),
+			ring([0, 0.58, 0.002], 0.17, 0.078, "MaraHips"),
+			ring([0, 0.7, 0], 0.205, 0.096, "MaraHips"),
+			ring([0, 0.83, -0.004], 0.218, 0.11, "MaraHips")
+		], rig.index, mats.fabric, 28),
 		skinnedTube("mara_rigged_neck", [
 			ring([0, 1.43, 0.012], 0.055, 0.045, "MaraNeck"),
 			ring([0, 1.53, 0.014], 0.06, 0.05, "MaraNeck")
 		], rig.index, mats.skin),
-		skinnedTube("mara_rigged_head", [
-			ring([0, 1.54, 0.01], 0.1, 0.08, "MaraHead"),
-			ring([0, 1.62, -0.005], 0.14, 0.105, "MaraHead"),
-			ring([0, 1.7, -0.005], 0.13, 0.098, "MaraHead"),
-			ring([0, 1.75, 0], 0.095, 0.075, "MaraHead")
-		], rig.index, mats.skin, 24),
+		skinnedEllipsoid("mara_rigged_head", [0, 1.645, -0.012], [0.128, 0.147, 0.096], "MaraHead", rig.index, mats.skin, 24, 18),
 		skinnedTube("mara_rigged_hair_mass", [
-			ring([0, 1.58, 0.072], 0.13, 0.05, "MaraHead"),
-			ring([0, 1.69, 0.052], 0.15, 0.07, "MaraHead"),
-			ring([0, 1.77, 0.01], 0.12, 0.045, "MaraHead")
-		], rig.index, mats.hair, 20),
+			ring([0, 1.57, 0.072], 0.118, 0.042, "MaraHead"),
+			ring([0, 1.66, 0.062], 0.148, 0.068, "MaraHead"),
+			ring([0, 1.75, 0.028], 0.126, 0.052, "MaraHead"),
+			ring([0, 1.79, 0.0], 0.085, 0.032, "MaraHead")
+		], rig.index, mats.hair, 28),
 		skinnedLimb("mara_rigged_upper_arm_l", [-0.2, 1.22, 0], [-0.255, 0.98, 0.015], 0.042, "MaraShoulderL", "MaraElbowL", rig.index, mats.jacket),
 		skinnedLimb("mara_rigged_upper_arm_r", [0.2, 1.22, 0], [0.255, 0.98, 0.015], 0.042, "MaraShoulderR", "MaraElbowR", rig.index, mats.jacket),
 		skinnedLimb("mara_rigged_forearm_l", [-0.255, 0.98, 0.015], [-0.305, 0.76, 0.03], 0.037, "MaraElbowL", "MaraHandL", rig.index, mats.jacket),
@@ -134,24 +134,48 @@ function buildRiggedMara(root, mats) {
 
 	addRigidDetail(proxy, "mara_rigged_eye_l", [0.052, 1.66, -0.145], 0.018, mats.eye, rig.bones.MaraHead);
 	addRigidDetail(proxy, "mara_rigged_eye_r", [-0.052, 1.66, -0.145], 0.018, mats.eye, rig.bones.MaraHead);
-	addRigidDetail(proxy, "mara_rigged_nose", [0, 1.62, -0.156], 0.024, mats.skin, rig.bones.MaraHead);
+	addEllipsoidDetail(proxy, "mara_rigged_eye_highlight_l", [0.057, 1.667, -0.16], [0.006, 0.004, 0.003], mats.eyeWet, rig.bones.MaraHead);
+	addEllipsoidDetail(proxy, "mara_rigged_eye_highlight_r", [-0.047, 1.667, -0.16], [0.006, 0.004, 0.003], mats.eyeWet, rig.bones.MaraHead);
+	addEllipsoidDetail(proxy, "mara_rigged_lower_eyelid_l", [0.052, 1.648, -0.153], [0.03, 0.004, 0.005], mats.skin, rig.bones.MaraHead);
+	addEllipsoidDetail(proxy, "mara_rigged_lower_eyelid_r", [-0.052, 1.648, -0.153], [0.03, 0.004, 0.005], mats.skin, rig.bones.MaraHead);
+	addEllipsoidDetail(proxy, "mara_rigged_nose_bridge", [0, 1.642, -0.154], [0.018, 0.045, 0.015], mats.skin, rig.bones.MaraHead);
+	addRigidDetail(proxy, "mara_rigged_nose_tip", [0, 1.61, -0.166], 0.021, mats.skin, rig.bones.MaraHead);
+	addEllipsoidDetail(proxy, "mara_rigged_cheek_l", [0.07, 1.615, -0.146], [0.029, 0.018, 0.008], mats.skin, rig.bones.MaraHead);
+	addEllipsoidDetail(proxy, "mara_rigged_cheek_r", [-0.07, 1.615, -0.146], [0.029, 0.018, 0.008], mats.skin, rig.bones.MaraHead);
 	addRigidDetail(proxy, "mara_rigged_pendant", [0, 1.01, -0.245], 0.042, mats.metal, rig.bones.MaraSpine);
 	addRigidDetail(proxy, "mara_rigged_ear_l", [0.136, 1.63, -0.01], 0.026, mats.skin, rig.bones.MaraHead);
 	addRigidDetail(proxy, "mara_rigged_ear_r", [-0.136, 1.63, -0.01], 0.026, mats.skin, rig.bones.MaraHead);
 	addRigidDetail(proxy, "mara_rigged_earring_l", [0.152, 1.59, -0.018], 0.014, mats.metal, rig.bones.MaraHead);
-	addAttachedBox(proxy, "mara_rigged_mouth", [0, 1.585, -0.158], [0.075, 0.009, 0.009], mats.jacketTrim, rig.bones.MaraHead);
+	addEllipsoidDetail(proxy, "mara_rigged_mouth_upper_lip", [0, 1.591, -0.164], [0.036, 0.0045, 0.004], mats.jacketTrim, rig.bones.MaraHead);
+	addEllipsoidDetail(proxy, "mara_rigged_mouth_lower_lip", [0, 1.579, -0.163], [0.033, 0.006, 0.004], mats.jacketTrim, rig.bones.MaraHead);
+	addAttachedBox(proxy, "mara_rigged_mouth", [0, 1.584, -0.166], [0.046, 0.003, 0.003], mats.jacketTrim, rig.bones.MaraHead);
 	addAttachedBox(proxy, "mara_rigged_brow_l", [0.052, 1.695, -0.153], [0.056, 0.008, 0.008], mats.hair, rig.bones.MaraHead, [0, 0, 0.1]);
 	addAttachedBox(proxy, "mara_rigged_brow_r", [-0.052, 1.695, -0.153], [0.056, 0.008, 0.008], mats.hair, rig.bones.MaraHead, [0, 0, -0.1]);
-	addAttachedBox(proxy, "mara_rigged_hair_lock_l", [0.116, 1.58, -0.045], [0.03, 0.16, 0.035], mats.hair, rig.bones.MaraHead, [0.0, 0.0, -0.2]);
-	addAttachedBox(proxy, "mara_rigged_hair_lock_r", [-0.116, 1.61, -0.04], [0.026, 0.12, 0.03], mats.hair, rig.bones.MaraHead, [0.0, 0.0, 0.18]);
+	addAttachedCapsule(proxy, "mara_rigged_hair_lock_l", [0.116, 1.58, -0.045], 0.016, 0.13, mats.hair, rig.bones.MaraHead, [0.0, 0.0, -0.2]);
+	addAttachedCapsule(proxy, "mara_rigged_hair_lock_r", [-0.116, 1.61, -0.04], 0.014, 0.1, mats.hair, rig.bones.MaraHead, [0.0, 0.0, 0.18]);
+	addAttachedCapsule(proxy, "mara_rigged_hair_strand_l", [0.145, 1.57, -0.035], 0.012, 0.22, mats.hair, rig.bones.MaraHead, [0.04, 0.0, -0.3]);
+	addAttachedCapsule(proxy, "mara_rigged_hair_strand_r", [-0.132, 1.59, -0.034], 0.01, 0.17, mats.hair, rig.bones.MaraHead, [0.02, 0.0, 0.26]);
 	addAttachedBox(proxy, "mara_rigged_jacket_lapel_l", [0.068, 1.24, -0.145], [0.055, 0.32, 0.018], mats.jacketTrim, rig.bones.MaraChest, [0.0, 0.0, -0.34]);
 	addAttachedBox(proxy, "mara_rigged_jacket_lapel_r", [-0.068, 1.24, -0.145], [0.055, 0.32, 0.018], mats.jacketTrim, rig.bones.MaraChest, [0.0, 0.0, 0.34]);
+	addAttachedCapsule(proxy, "mara_rigged_jacket_collar_l", [0.1, 1.43, -0.09], 0.012, 0.18, mats.jacketTrim, rig.bones.MaraChest, [0.0, 0.0, 0.55]);
+	addAttachedCapsule(proxy, "mara_rigged_jacket_collar_r", [-0.1, 1.43, -0.09], 0.012, 0.18, mats.jacketTrim, rig.bones.MaraChest, [0.0, 0.0, -0.55]);
+	addAttachedCapsule(proxy, "mara_rigged_jacket_zipper", [0, 1.17, -0.16], 0.006, 0.45, mats.metal, rig.bones.MaraChest);
+	addAttachedCapsule(proxy, "mara_rigged_jacket_seam_l", [0.18, 1.16, -0.045], 0.005, 0.52, mats.jacketTrim, rig.bones.MaraChest, [0.0, 0.0, 0.04]);
+	addAttachedCapsule(proxy, "mara_rigged_jacket_seam_r", [-0.18, 1.16, -0.045], 0.005, 0.52, mats.jacketTrim, rig.bones.MaraChest, [0.0, 0.0, -0.04]);
+	addAttachedCapsule(proxy, "mara_rigged_shirt_fold_l", [0.055, 1.14, -0.158], 0.004, 0.32, mats.shirt, rig.bones.MaraChest, [0.0, 0.0, -0.2]);
+	addAttachedCapsule(proxy, "mara_rigged_shirt_fold_r", [-0.052, 1.12, -0.158], 0.004, 0.28, mats.shirt, rig.bones.MaraChest, [0.0, 0.0, 0.16]);
 	addAttachedBox(proxy, "mara_rigged_belt", [0, 0.84, -0.12], [0.42, 0.035, 0.03], mats.leather, rig.bones.MaraHips);
 	addAttachedBox(proxy, "mara_rigged_jacket_hem", [0, 0.86, -0.135], [0.4, 0.03, 0.024], mats.jacketTrim, rig.bones.MaraHips);
 	addAttachedBox(proxy, "mara_rigged_cargo_pocket_l", [0.175, 0.52, -0.065], [0.075, 0.13, 0.028], mats.fabric, rig.bones.MaraHipL, [0, 0, -0.06]);
 	addAttachedBox(proxy, "mara_rigged_cargo_pocket_r", [-0.175, 0.52, -0.065], [0.075, 0.13, 0.028], mats.fabric, rig.bones.MaraHipR, [0, 0, 0.06]);
+	addAttachedCapsule(proxy, "mara_rigged_trouser_crease_l", [-0.07, 0.42, -0.065], 0.005, 0.44, mats.fabric, rig.bones.MaraHipL, [0.08, 0.0, 0.02]);
+	addAttachedCapsule(proxy, "mara_rigged_trouser_crease_r", [0.07, 0.42, -0.065], 0.005, 0.44, mats.fabric, rig.bones.MaraHipR, [0.08, 0.0, -0.02]);
 	addAttachedBox(proxy, "mara_rigged_boot_sole_l", [-0.11, 0.0, -0.19], [0.15, 0.032, 0.2], mats.leather, rig.bones.MaraAnkleL);
 	addAttachedBox(proxy, "mara_rigged_boot_sole_r", [0.11, 0.0, -0.19], [0.15, 0.032, 0.2], mats.leather, rig.bones.MaraAnkleR);
+	addEllipsoidDetail(proxy, "mara_rigged_boot_toe_l", [-0.11, 0.055, -0.285], [0.078, 0.036, 0.052], mats.leather, rig.bones.MaraAnkleL);
+	addEllipsoidDetail(proxy, "mara_rigged_boot_toe_r", [0.11, 0.055, -0.285], [0.078, 0.036, 0.052], mats.leather, rig.bones.MaraAnkleR);
+	addAttachedCapsule(proxy, "mara_rigged_boot_lace_l", [-0.11, 0.09, -0.18], 0.006, 0.11, mats.jacketTrim, rig.bones.MaraAnkleL, [Math.PI / 2, 0.0, 0.0]);
+	addAttachedCapsule(proxy, "mara_rigged_boot_lace_r", [0.11, 0.09, -0.18], 0.006, 0.11, mats.jacketTrim, rig.bones.MaraAnkleR, [Math.PI / 2, 0.0, 0.0]);
 	addReplacementArm(proxy, "l", 1.0, mats);
 	addReplacementArm(proxy, "r", -1.0, mats);
 	addStrap(proxy, "mara_rigged_cross_body_strap", rig.index, skeleton, mats.leather);
@@ -285,6 +309,50 @@ function skinnedLimb(name, start, end, radius, startBone, endBone, boneIndex, ma
 	return skinnedMesh(name, positions, normals, uvs, indices, skinIndices, skinWeights, mat);
 }
 
+function skinnedEllipsoid(name, center, scale, boneName, boneIndex, mat, radialSegments = 18, heightSegments = 12) {
+	const positions = [];
+	const normals = [];
+	const uvs = [];
+	const skinIndices = [];
+	const skinWeights = [];
+	const indices = [];
+
+	for (let y = 0; y <= heightSegments; y++) {
+		const v = y / heightSegments;
+		const theta = v * Math.PI;
+		const sinTheta = Math.sin(theta);
+		const cosTheta = Math.cos(theta);
+		for (let x = 0; x < radialSegments; x++) {
+			const u = x / radialSegments;
+			const phi = u * Math.PI * 2;
+			const localX = Math.cos(phi) * sinTheta;
+			const localY = cosTheta;
+			const localZ = Math.sin(phi) * sinTheta;
+			const jawTaper = 1 - Math.max(0, localY * -1) * 0.18;
+			const cheekLift = Math.max(0, -localZ) * Math.max(0, 1 - Math.abs(localY) * 1.4) * 0.012;
+			positions.push(
+				center[0] + localX * scale[0] * jawTaper,
+				center[1] + localY * scale[1] + cheekLift,
+				center[2] + localZ * scale[2]
+			);
+			normals.push(localX, localY, localZ);
+			uvs.push(u, v);
+			skinIndices.push(boneIndex[boneName], 0, 0, 0);
+			skinWeights.push(1, 0, 0, 0);
+		}
+	}
+	for (let y = 0; y < heightSegments; y++) {
+		for (let x = 0; x < radialSegments; x++) {
+			const a = y * radialSegments + x;
+			const b = y * radialSegments + ((x + 1) % radialSegments);
+			const c = (y + 1) * radialSegments + x;
+			const d = (y + 1) * radialSegments + ((x + 1) % radialSegments);
+			indices.push(a, c, b, b, c, d);
+		}
+	}
+	return skinnedMesh(name, positions, normals, uvs, indices, skinIndices, skinWeights, mat);
+}
+
 function skinnedMesh(name, positions, normals, uvs, indices, skinIndices, skinWeights, mat) {
 	const geometry = new THREE.BufferGeometry();
 	geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
@@ -307,6 +375,17 @@ function addRigidDetail(parent, name, position, radius, mat, attachBone) {
 	mesh.castShadow = true;
 	mesh.receiveShadow = true;
 	attachBone.attach(mesh);
+}
+
+function addEllipsoidDetail(parent, name, position, scale, mat, attachBone) {
+	const mesh = new THREE.Mesh(new THREE.SphereGeometry(1, 18, 12), mat);
+	mesh.name = name;
+	mesh.position.fromArray(position);
+	mesh.scale.fromArray(scale);
+	mesh.castShadow = true;
+	mesh.receiveShadow = true;
+	attachBone.attach(mesh);
+	return mesh;
 }
 
 function addReplacementArm(parent, suffix, side, mats) {
@@ -335,6 +414,17 @@ function addSpherePart(parent, name, position, radius, mat) {
 	mesh.receiveShadow = true;
 	mesh.userData.mara_three_rigged_replacement_arm = true;
 	parent.add(mesh);
+	return mesh;
+}
+
+function addAttachedCapsule(parent, name, position, radius, length, mat, attachBone, rotation = [0, 0, 0]) {
+	const mesh = new THREE.Mesh(new THREE.CapsuleGeometry(radius, length, 12, 16), mat);
+	mesh.name = name;
+	mesh.position.fromArray(position);
+	mesh.rotation.fromArray(rotation);
+	mesh.castShadow = true;
+	mesh.receiveShadow = true;
+	attachBone.attach(mesh);
 	return mesh;
 }
 

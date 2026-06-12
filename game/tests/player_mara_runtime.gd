@@ -476,6 +476,16 @@ func _check_imported_mara_material_quality() -> bool:
 	var belt := _find_mesh(_imported, "mara_rigged_belt")
 	var eye := _find_mesh(_imported, "mara_rigged_eye_l")
 	var mouth := _find_mesh(_imported, "mara_rigged_mouth")
+	var eye_highlight := _find_mesh(_imported, "mara_rigged_eye_highlight_l")
+	var lip := _find_mesh(_imported, "mara_rigged_mouth_upper_lip")
+	var cheek := _find_mesh(_imported, "mara_rigged_cheek_l")
+	var hair_strand := _find_mesh(_imported, "mara_rigged_hair_strand_l")
+	var collar := _find_mesh(_imported, "mara_rigged_jacket_collar_l")
+	var zipper := _find_mesh(_imported, "mara_rigged_jacket_zipper")
+	var jacket_seam := _find_mesh(_imported, "mara_rigged_jacket_seam_l")
+	var shirt_fold := _find_mesh(_imported, "mara_rigged_shirt_fold_l")
+	var trouser_crease := _find_mesh(_imported, "mara_rigged_trouser_crease_l")
+	var boot_toe := _find_mesh(_imported, "mara_rigged_boot_toe_l")
 	if (
 		head == null
 		or jacket == null
@@ -484,6 +494,16 @@ func _check_imported_mara_material_quality() -> bool:
 		or belt == null
 		or eye == null
 		or mouth == null
+		or eye_highlight == null
+		or lip == null
+		or cheek == null
+		or hair_strand == null
+		or collar == null
+		or zipper == null
+		or jacket_seam == null
+		or shirt_fold == null
+		or trouser_crease == null
+		or boot_toe == null
 	):
 		_fail("imported rigged Three.js Mara material-quality nodes are missing")
 		return false
@@ -494,6 +514,16 @@ func _check_imported_mara_material_quality() -> bool:
 	var belt_mat := belt.material_override as StandardMaterial3D
 	var eye_mat := eye.material_override as StandardMaterial3D
 	var mouth_mat := mouth.material_override as StandardMaterial3D
+	var eye_highlight_mat := eye_highlight.material_override as StandardMaterial3D
+	var lip_mat := lip.material_override as StandardMaterial3D
+	var cheek_mat := cheek.material_override as StandardMaterial3D
+	var hair_strand_mat := hair_strand.material_override as StandardMaterial3D
+	var collar_mat := collar.material_override as StandardMaterial3D
+	var zipper_mat := zipper.material_override as StandardMaterial3D
+	var jacket_seam_mat := jacket_seam.material_override as StandardMaterial3D
+	var shirt_fold_mat := shirt_fold.material_override as StandardMaterial3D
+	var trouser_crease_mat := trouser_crease.material_override as StandardMaterial3D
+	var boot_toe_mat := boot_toe.material_override as StandardMaterial3D
 	if (
 		skin == null
 		or jacket_mat == null
@@ -502,6 +532,16 @@ func _check_imported_mara_material_quality() -> bool:
 		or belt_mat == null
 		or eye_mat == null
 		or mouth_mat == null
+		or eye_highlight_mat == null
+		or lip_mat == null
+		or cheek_mat == null
+		or hair_strand_mat == null
+		or collar_mat == null
+		or zipper_mat == null
+		or jacket_seam_mat == null
+		or shirt_fold_mat == null
+		or trouser_crease_mat == null
+		or boot_toe_mat == null
 	):
 		_fail("imported Three.js Mara material overrides are missing")
 		return false
@@ -511,8 +551,18 @@ func _check_imported_mara_material_quality() -> bool:
 		and _check_leather_material(strap_mat)
 		and _check_leather_material(belt_mat)
 		and _check_eye_material(eye_mat)
+		and _check_eye_material(eye_highlight_mat)
+		and _check_skin_material(cheek_mat)
+		and _check_jacket_material(collar_mat)
+		and _check_jacket_material(jacket_seam_mat)
+		and _check_jacket_material(shirt_fold_mat)
+		and _check_jacket_material(trouser_crease_mat)
+		and _check_leather_material(boot_toe_mat)
+		and _check_hair_material(hair_strand_mat)
 		and String(mouth_mat.get_meta("mara_imported_surface_profile", "")) == "mouth"
+		and String(lip_mat.get_meta("mara_imported_surface_profile", "")) == "mouth"
 		and pendant_mat.metallic > 0.5
+		and zipper_mat.metallic > 0.5
 	)
 
 
@@ -538,7 +588,13 @@ func _check_leather_material(mat: StandardMaterial3D) -> bool:
 
 
 func _check_hair_material(mat: StandardMaterial3D) -> bool:
-	if mat.rim_enabled and String(mat.get_meta("mara_surface_profile", "")) == "hair":
+	if (
+		mat.rim_enabled
+		and (
+			String(mat.get_meta("mara_surface_profile", "")) == "hair"
+			or String(mat.get_meta("mara_imported_surface_profile", "")) == "hair"
+		)
+	):
 		return true
 	_fail("playable Mara hair material is missing silhouette shading")
 	return false

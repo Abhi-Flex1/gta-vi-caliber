@@ -67,23 +67,35 @@ static func finish_material(mesh: MeshInstance3D) -> void:
 	var src := mesh.get_active_material(0)
 	if src != null:
 		key += " " + src.resource_name.to_lower()
-	if key.contains("eye"):
+	if key.contains("eye") and not key.contains("eyelid"):
 		mesh.material_override = _eye_material()
 	elif key.contains("mouth"):
 		mesh.material_override = _mouth_material()
 	elif (
-		key.contains("skin") or key.contains("head") or key.contains("hand") or key.contains("nose")
+		key.contains("skin")
+		or key.contains("head")
+		or key.contains("hand")
+		or key.contains("nose")
+		or key.contains("cheek")
+		or key.contains("eyelid")
 	):
 		mesh.material_override = _skin_material()
 	elif key.contains("hair"):
 		mesh.material_override = _hair_material()
-	elif key.contains("brass") or key.contains("pendant") or key.contains("earring"):
+	elif (
+		key.contains("brass")
+		or key.contains("pendant")
+		or key.contains("earring")
+		or key.contains("zipper")
+	):
 		mesh.material_override = _metal_material()
 	elif (
 		key.contains("leather")
 		or key.contains("black")
 		or key.contains("strap")
 		or key.contains("belt")
+		or key.contains("boot")
+		or key.contains("lace")
 	):
 		mesh.material_override = _leather_material()
 	elif key.contains("shirt"):
@@ -91,11 +103,17 @@ static func finish_material(mesh: MeshInstance3D) -> void:
 	elif (
 		key.contains("fabric")
 		or key.contains("trousers")
+		or key.contains("trouser")
 		or key.contains("thigh")
 		or key.contains("shin")
 	):
 		mesh.material_override = _fabric_material(Color(0.42, 0.50, 0.46), "fabric")
-	elif key.contains("jacket") or key.contains("lapel") or key.contains("torso"):
+	elif (
+		key.contains("jacket")
+		or key.contains("lapel")
+		or key.contains("torso")
+		or key.contains("collar")
+	):
 		mesh.material_override = _fabric_material(Color(0.02, 0.024, 0.026), "jacket")
 
 
@@ -282,11 +300,11 @@ static func _eye_material() -> StandardMaterial3D:
 
 static func _mouth_material() -> StandardMaterial3D:
 	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.035, 0.012, 0.012)
-	mat.roughness = 0.42
+	mat.albedo_color = Color(0.22, 0.075, 0.065)
+	mat.roughness = 0.5
 	mat.clearcoat_enabled = true
-	mat.clearcoat = 0.16
-	mat.clearcoat_roughness = 0.3
+	mat.clearcoat = 0.22
+	mat.clearcoat_roughness = 0.34
 	mat.set_meta("mara_imported_surface_profile", "mouth")
 	return mat
 
