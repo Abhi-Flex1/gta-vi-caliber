@@ -76,6 +76,7 @@ Groups the live scene already publishes: `player`, `player_health`,
 | `SideJob` | taxi/delivery/vigilante contracts | `fare`, `payout`, active-job lifecycle | wired live via `SideJobBoard` (pickup/dropoff Area3Ds) |
 | `StreetRace` | checkpoint laps + placement | `reached`, `progress`, `placement`, `reward` | checkpoint Area3Ds + rival progress feeds |
 | `HeistCrew` | crew skill/cut -> odds + take | `add_member`, `success_chance`, `attempt`, `payout` | a heist-planning UI + a mission finale |
+| `StuntScore` | freeform trick-combo scorer (air/near-miss) | `add_trick`, `multiplier`, `pending_score`, `bank`, `wipe` | a stunt controller calls `add_trick` on detected tricks, `bank` on a clean land / `wipe` on crash; apply `cash_for`/`respect_for` to wallet + `PlayerProgression` |
 | `HitContract` | assassination board that moves the stock market | `available`, `accept`, `market_effect_of`, `complete`, `total_earned` | a contract board; on `complete()` feed the returned `market_effect` to `StockMarket.apply_rivalry_shock` (the invest-then-hit loop) |
 
 ## Economy / progression
