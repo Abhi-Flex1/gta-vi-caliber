@@ -56,17 +56,20 @@ ssao_enabled = true
 ssao_intensity = 2.2
 ssil_enabled = true
 glow_enabled = true
-glow_intensity = 0.6
-glow_bloom = 0.15
-glow_hdr_threshold = 1.0
+glow_intensity = 0.85
+glow_strength = 1.05
+glow_bloom = 0.24
+glow_blend_mode = 1
+glow_hdr_threshold = 0.85
 fog_enabled = true
 fog_light_color = Color(1.0, 0.72, 0.5, 1)
-fog_density = 0.0004
+fog_density = 0.0006
 fog_sky_affect = 0.0
-fog_aerial_perspective = 0.7
+fog_aerial_perspective = 0.85
 adjustment_enabled = true
-adjustment_contrast = 1.1
-adjustment_saturation = 1.28
+adjustment_contrast = 1.14
+adjustment_saturation = 1.33
+adjustment_brightness = 1.02
 
 [node name="Miami" type="Node3D" groups=["world"]]
 
