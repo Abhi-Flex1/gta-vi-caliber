@@ -60,4 +60,14 @@ step "smoke test"
 step "unit tests"
 "$GODOT_BIN" --headless --path game --script res://tests/run_tests.gd
 
+# --- 6. playable-map integration probes --------------------------------------
+# Frame-stepped runtime checks the one-frame smoke test cannot make: the main
+# map's gameplay stack is wired (self-wiring system nodes registered) and the
+# GTA core loop fires (crime -> wanted -> police dispatch). These guard against
+# a scene edit silently unhooking the simulation.
+step "miami wiring probe"
+"$GODOT_BIN" --headless --path game --script res://tests/miami_wiring_probe.gd
+step "miami loop probe"
+"$GODOT_BIN" --headless --path game --script res://tests/miami_loop_probe.gd
+
 printf '\nAll checks passed ✔\n'
