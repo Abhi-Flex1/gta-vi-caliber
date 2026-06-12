@@ -5,6 +5,28 @@ bar (trailer-fidelity coastal open world). Updated by whoever runs a
 playtest/capture pass; newest entry first. Captures referenced live in
 `/tmp/gta6_playtest/` locally — judge from a fresh run, not memory.
 
+## 2026-06-12 — open-water whitecaps: the bay stops reading as plastic
+
+Track Q (texture/material axis), in-lane water pass. The named gap "shore is a
+tidal-flat lagoon rather than a breaking surf line" had a hidden cause: the
+miami StateOcean ran `foam_strength 0.18`, and in the old shader that single
+knob scaled BOTH the shoreline band AND the crest foam together. It was crushed
+to 0.18 to stop the flat 12 km seabed painting white at the sand — which also
+killed every whitecap on the open swell, leaving the bay flat and plasticky
+(verified: `/tmp/ocean_before.png`).
+
+Fix: decoupled the two. Whitecaps now key off the Gerstner **Jacobian** (foam
+where the wave field folds — the breaking leeward face of a crest, physically
+where caps form) on their own `u_whitecap_strength`/`u_whitecap_coverage` knobs,
+independent of the shoreline `u_foam_depth`/`u_foam_strength` band. Miami keeps
+its thin shore (no white flats) but the bay now froths on the swell
+(`/tmp/ocean.png`, `/tmp/ocean_crisp.png`). Contract-guarded by
+`test_ocean_foam.gd` (the foam is GPU-only, so it parses the shader + ocean.gd
+to keep the two bands from silently re-merging). Honest limits: near-field foam
+is still slightly blobby (low-freq streak noise), and this is open-sea chop, not
+a true breaking-surf shoreline (that needs bathymetry, not a flat seabed).
+Verdict Water: Mid-High → High on the open bay; shoreline surf still open.
+
 ## 2026-06-11 (later) — postcard v1 achieved
 
 Palm row + boardwalk props landed (PalmMesh: parabolic-spine trunks,

@@ -181,6 +181,10 @@ func _build_water() -> void:
 	water.set("surface_roughness", 0.045)
 	water.set("foam_depth_m", 0.08)
 	water.set("foam_strength", 0.18)
+	# Flat seabed → keep the shoreline band thin (above), but let the open bay
+	# froth: Jacobian whitecaps on the swell read as a living sea, not plastic.
+	water.set("whitecap_strength", 0.7)
+	water.set("whitecap_coverage", 0.96)
 	water.set("foam_color", Color(0.92, 0.95, 0.92, 1.0))
 	water.position.y = ocean_y
 	add_child(water)
