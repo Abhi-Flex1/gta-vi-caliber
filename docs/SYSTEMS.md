@@ -85,6 +85,7 @@ Groups the live scene already publishes: `player`, `player_health`,
 | `CasinoGames` | roulette/slots/blackjack | `roulette_payout`, `slot_payout`, `blackjack_settle`, bankroll | a casino UI vs `PlayerStats` chips |
 | `PlayerProgression` | respect/XP + unlocks | `add_xp`, `level`, `unlocks_at`, `is_unlocked` | wired live via `ProgressionTracker` (missions grant XP) |
 | `StatTracker` | lifetime stats + 100% | `add`, `is_achieved`, `completion_percent`, serialize | wired live via `StatsCoordinator` |
+| `StockMarket` | event-driven equities + tracked portfolio | `apply_rivalry_shock`, `apply_sector_event`, `price`, `buy`, `sell`, `unrealized_gain` | a brokerage/phone-app UI vs `PlayerStats`; feed mission kills, heists & district turf changes in as price shocks (the assassinate-a-rival-to-pump-the-stock loop) |
 
 ## Support
 
