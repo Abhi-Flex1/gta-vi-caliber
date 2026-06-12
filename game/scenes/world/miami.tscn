@@ -1,4 +1,4 @@
-[gd_scene load_steps=33 format=3]
+[gd_scene load_steps=34 format=3]
 
 ; Miami / Vice City — THE game map. The streamer pages real Miami districts
 ; (downtown, Brickell, South Beach, Mid-Beach, Wynwood) from the manifest at
@@ -33,6 +33,7 @@
 [ext_resource type="PackedScene" path="res://scenes/props/armor.tscn" id="27_armor"]
 [ext_resource type="Script" path="res://scripts/systems/progression_tracker.gd" id="28_progress"]
 [ext_resource type="Script" path="res://scripts/systems/stats_coordinator.gd" id="29_stats"]
+[ext_resource type="Script" path="res://scripts/missions/mission_campaign.gd" id="30_campaign"]
 
 [sub_resource type="SphereShape3D" id="trigger_shape"]
 radius = 6.0
@@ -154,11 +155,13 @@ waypoints = {
 "return_home": Vector3(0, 1, 0)
 }
 time_limit = 0.0
+auto_start = false
 
 [node name="ReachCarTrigger" type="Area3D" parent="Mission"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 1, 5)
 script = ExtResource("21_trigger")
 objective_id = "reach_car"
+repeatable = true
 
 [node name="ReachCarShape" type="CollisionShape3D" parent="Mission/ReachCarTrigger"]
 shape = SubResource("trigger_shape")
@@ -167,6 +170,7 @@ shape = SubResource("trigger_shape")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 72, 1, -48)
 script = ExtResource("21_trigger")
 objective_id = "drive_strip"
+repeatable = true
 
 [node name="DriveStripShape" type="CollisionShape3D" parent="Mission/DriveStripTrigger"]
 shape = SubResource("trigger_shape")
@@ -175,6 +179,7 @@ shape = SubResource("trigger_shape")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 script = ExtResource("21_trigger")
 objective_id = "return_home"
+repeatable = true
 
 [node name="ReturnHomeShape" type="CollisionShape3D" parent="Mission/ReturnHomeTrigger"]
 shape = SubResource("trigger_shape")
@@ -222,6 +227,9 @@ script = ExtResource("28_progress")
 
 [node name="StatsCoordinator" type="Node" parent="."]
 script = ExtResource("29_stats")
+
+[node name="MissionCampaign" type="Node" parent="."]
+script = ExtResource("30_campaign")
 
 [node name="WantedEvasion" type="Node" parent="."]
 script = ExtResource("25_evade")
