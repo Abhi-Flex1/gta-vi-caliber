@@ -1,0 +1,220 @@
+# Asset pipeline (PROPOSAL)
+
+**Status: PROPOSAL — not yet team policy.** This adapts an asset-pipeline
+master plan to this repo's existing contracts (`docs/ASSETS.md` ledger,
+`AGENTS.md`, the PR #33 day-night sky). Nothing here overrides
+`docs/ASSETS.md`; where this doc says less, the ledger rules say more.
+Section 9 (art direction) is an explicit open question for Ziwen and the
+team before any bulk production starts.
+
+## 1. The pipeline, one line
+
+ambientCG / Poly Haven (materials) → Blender-OSM layout + Buildify
+(building mass) → Sketchfab CC hunting (hero buildings, props, base cars)
+→ MB-Lab / MakeHuman bodies + Quaternius UAL animations (NPCs) → AI image
+gen for decals/signage/liveries ONLY → Blender driven via MCP for
+cleanup/variation/export → Godot 4, judged by in-game screenshot.
+
+## 2. Priorities (foundation first)
+
+1. **Streets / ground textures** — every screenshot stands on them.
+2. **Buildings** — procedural mass + real facade materials; hero pieces later.
+3. **NPCs / people** — bodies + the UAL animation set already proven in-repo.
+
+Vehicles, props, and vegetation slot in behind these; they multiply an
+existing scene, they don't found one.
+
+## 3. Sources by category
+
+All commit-safe: **CC0 or CC-BY 4.0 only** (see section 4 — this is the
+whole game for a public repo). Mixamo/Adobe content is **banned** for this
+repo: it is not CC-licensed, baked-into-a-GLB or otherwise. The Quaternius
+Universal Animation Library (45 CC0 clips, already committed, rig proven in
+PR #31) is our animation library.
+
+- **Materials / textures:** ambientCG (primary; public download API,
+  scripted via `tools/pull-material.sh`, section 5), Poly Haven, cgbookcase,
+  ShareTextures. All CC0. With these, AI texture generation shrinks to
+  custom-only work (signage, graffiti, liveries, decals).
+- **Buildings:** procedural, not downloaded. Blender-OSM free tier (real
+  street layouts + building footprints; the data is ODbL like our existing
+  `game/assets/world/*.json` extracts — same attribution rules apply) +
+  Buildify (free geometry-nodes building generator) dressed with ambientCG
+  facade materials. Sketchfab CC0/CC-BY for distinctive hero buildings.
+  The Base Mesh (CC0) for kitbashing.
+- **Vehicles:** Sketchfab CC0/CC-BY base cars. Audition ~10, keep 3–5;
+  verify the license per asset on the asset page (CC, not "Standard").
+  Multiplier: a few good bases × Blender reskins (colors, AI liveries,
+  plates) = a full traffic fleet. Stylized kits (Kenney/Quaternius) only
+  if the section 9 call goes against our recommendation.
+- **NPCs / people:** MB-Lab or MakeHuman parametric bodies (license-check
+  each export — the *tool* being GPL does not make exports GPL, but verify
+  the export terms per tool version and record them in the ledger),
+  animated with the in-repo Quaternius UAL.
+- **Props / vegetation:** Poly Haven models first (photoreal, fits the
+  section 9 recommendation), Sketchfab CC, OpenGameArt; Kenney/Quaternius
+  prop kits only if section 9 lands stylized. License-verify each asset
+  individually.
+
+## 4. Licensing (non-negotiable — public repo = redistribution)
+
+Everything in `docs/ASSETS.md` applies. On top of that:
+
+- **CC0:** commit freely; ledger row required all the same.
+- **CC-BY 4.0:** ledger row **plus** a `CREDITS.md` line (author, source
+  URL, license).
+- **Marketplace "free" licenses** (Fab Standard, BlenderKit, most itch.io
+  packs) permit game *use* but **not redistribution**. Never commit them.
+- **Sketchfab — mandatory per-asset verification step.** Sketchfab uploads
+  are sometimes mislabeled. Before an asset enters the repo: (1) open the
+  asset page and confirm the stated license is CC0 or CC-BY 4.0 (not
+  "Standard", not "Editorial"); (2) save the asset page URL **and** the
+  license deed URL into the asset's `docs/ASSETS.md` ledger row; (3) if the
+  uploader plainly isn't the author (rips happen), skip the asset entirely.
+  No ledger row with both URLs, no commit.
+- **OSM-derived data** (Blender-OSM footprints included) is ODbL 1.0. The
+  repo already accepts geodata under ODbL with embedded attribution (see the
+  ledger footnote in `docs/ASSETS.md`); meshes we *generate* from footprints
+  are our own work, but the extracted data files keep their attribution and
+  a credits entry.
+- Nothing enters the repo without a confirmed license. One bad asset
+  poisons the project.
+
+## 5. Materials tooling: `tools/pull-material.sh`
+
+Pulls a PBR set from ambientCG by asset ID and unpacks it into the repo's
+`PbrMaterial.from_set` layout (`docs/ASSETS.md`):
+
+```
+tools/pull-material.sh <AmbientCG-ID> <target-name> [resolution]
+# e.g. tools/pull-material.sh Asphalt025C asphalt_worn_01 2K
+# →  game/assets/materials/asphalt_worn_01/{albedo,normal,roughness,ao}.png
+```
+
+It uses the public API (`https://ambientcg.com/api/v2/full_json`) to
+resolve the download, renames maps to the repo suffix convention, prints
+the provenance line for the ledger, and refuses to overwrite an existing
+set. ambientCG is CC0, but every pulled set still gets its ledger row in
+the same commit. 2K is the standard; 4K only for hero close-ups.
+
+## 6. Vehicle material recipe (the "rubbery car" fix)
+
+Imported cars arrive with merged materials, metallic 0, roughness 0.5 —
+i.e. rubber. Two tiers:
+
+- **Fast fix (traffic cars):** metallic 1.0, roughness 0.2, clearcoat ON,
+  opaque tinted glass is fine.
+- **Proper fix (hero vehicles only):** separate window faces to a glass
+  material (roughness 0.05, metallic 0, transparency, dark grey-blue alpha
+  ~0.85); tires roughness 0.8 / metallic 0; flatten any baked-in
+  reflections out of the albedo.
+
+**Reflections need an environment to reflect — and the answer here is NOT
+an HDRI sky.** This repo has a live day-night physical sky (PR #33,
+`sky.gdshader` + SkyController); a static HDRI would regress it and is
+off the table. Instead:
+
+- Place **ReflectionProbe** nodes at vehicle-dense spots (streets,
+  parking, showcase scenes). Set them to update on demand (re-capture on
+  time-of-day changes, not per-frame) so day reflections aren't pasted
+  onto night paint.
+- Consider **SDFGI** for large-scale ambient bounce; it tracks the dynamic
+  sky on its own. Budget it: measure on the night-street scene before
+  adopting (the repo has prior art on night-perf cliffs, see PR #33 notes).
+- Screen-space reflections can supplement on wet-look streets but never
+  replace probes for paint.
+
+## 7. AI image gen — narrow role
+
+Decals, signage, storefront art, graffiti, liveries, plates, and concept
+references only. Never bulk textures (ambientCG wins on quality and
+license), never meshes. Repo policy in `docs/ASSETS.md` already governs
+this: generator terms must permit CC-BY-4.0 redistribution, prompts must
+not target a specific artist/game/franchise, ledger row marked
+`AI (<tool>)`. Texture prompts must be orthographic with flat lighting (no
+baked shadows) or they won't tile or relight; verify 2×2 tiling in Godot
+before accepting. Provider/API wiring is a later step — no gen tooling in
+the proof-of-concept phase.
+
+## 8. Godot 4 import cheatsheet
+
+- **GLB is the exchange format.**
+- Suffix auto-import works: `name_albedo/_normal/_roughness/_ao/
+  _metallic/_height.png` — but in-repo materials prefer the
+  `PbrMaterial.from_set` folder layout (`docs/ASSETS.md`).
+- **Repeat = Enabled** for tileables (Godot defaults to Disabled).
+- Normal maps flagged as normal-map type; albedo sRGB, data maps linear.
+- Flip the normal-map green channel if bumps invert (Godot expects
+  OpenGL-style +Y).
+- **Headless imports skip `detect_3d`** — textures imported headless keep
+  2D defaults (no mipmaps, no VRAM compression). We hit this on the road
+  PBR work. Set import flags explicitly (commit the `.import` files with
+  mipmaps + VRAM compression for 3D textures) and eyeball one in-game
+  screenshot per new texture set.
+- Pack AO+Roughness+Metallic into one ORM texture for perf where the
+  material count justifies it.
+- 2K standard, 4K hero-closeup only. Triplanar for terrain/roads to dodge
+  UV seams (supported by `PbrMaterial.from_set`).
+
+## 9. OPEN QUESTION for Ziwen + team: art direction target
+
+**Flagged, recommended, not decided here.** This choice decides which
+sources above we lean on (photoreal scans + Sketchfab realistic cars vs
+stylized kits), so it has to land before bulk generation starts.
+
+The project's stated bar is the GTA VI trailer (`docs/QUALITY.md` grades
+every playtest against the VISION.md "trailer-fidelity" bar) — i.e.
+photorealism.
+
+**Our recommendation: aim realistic, not stylized.** Photoreal scanned
+surfaces (ambientCG / Poly Haven), real OSM layouts, PBR lighting — while
+accepting consistent, clean mid-poly meshes where $0 photoreal meshes
+don't exist (NPCs, vehicles). Consistency reads as quality; patchwork
+photorealism reads as asset-flip, so the realism comes from materials and
+lighting applied uniformly, not from mixing one photoreal hero into a
+stylized street.
+
+Practically: skip the stylized kits (Kenney / Quaternius low-poly) for
+world assets going forward; reserve simple meshes for where they're
+unavoidable and dress them in realistic materials. (The Quaternius
+*animation* library is unaffected — it's motion data, not a look.)
+
+Until Ziwen calls it: foundation work (streets/ground materials, building
+massing dressed in scanned facades) is safe — it serves the photoreal
+target and survives a stylized call. Hold bulk hero assets, vehicle
+fleets, and NPC face/clothing variety until the call.
+
+## 10. Blender via MCP — setup and division of labor
+
+**Setup (verified working 2026-06-12, Blender 5.1.2 / Python 3.13.9):**
+
+1. Blender runs locally with the **blender-mcp addon** enabled and its
+   bridge server started (sidebar → BlenderMCP → Connect).
+2. The repo's `.mcp.json` registers the MCP server: `uvx blender-mcp`
+   (stdio). Claude Code picks it up per-project.
+3. Round-trip test: `get_scene_info` should return the live scene;
+   `execute_blender_code` with a `print()` should echo output back. If
+   either fails, the bridge is down — fix the connection first, never
+   work around it blind.
+
+**Division of labor:** live MCP for iterative, watched work (material
+tweaks, one-off exports, recipe development); headless
+(`blender --background --python script.py`) once a recipe is proven and
+batch-applying. Strengths: batch operations, materials, mesh separations,
+exports, rig boilerplate. Weakness: creative modeling and topology — don't
+ask it to sculpt.
+
+## 11. Staged rollout (proposed, repo-adjusted)
+
+| Stage | What | Gate |
+| --- | --- | --- |
+| 1 | `tools/pull-material.sh` + starter material set (asphalt, concrete/pavement, facades) | Safe to PR: CC0, ledger rows, no scene changes |
+| 2 | Streets/ground: wire starter materials into the road/sidewalk/ground shaders | PR per surface; in-game before/after screenshots required |
+| 3 | Buildings: Blender-OSM + Buildify proof of concept → recipe doc → batch | Recipe PR safe; **bulk generation waits on section 9** |
+| 4 | Vehicles: rubbery-car fast fix on the traffic fleet + ReflectionProbes | Safe to PR with screenshots; probe placement reviewed for perf |
+| 5 | NPCs: MB-Lab/MakeHuman + UAL retarget pilot (one body) | Pilot PR safe; variety batch waits on section 9 |
+| 6 | AI decal/signage lane | Waits on section 9 **and** maintainer review of generator terms |
+
+Every stage: `tools/check.sh` green, ledger rows in the same commit as the
+binaries, `git lfs status` verified, in-game screenshot judged by eye
+before any PR.
