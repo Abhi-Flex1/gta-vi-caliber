@@ -178,18 +178,16 @@ func test_total_carried() -> bool:
 	return m.total_carried() == 7
 
 
-func test_bust_risk_rises_with_load() -> bool:
+func test_bust_risk_rises_with_load_and_clamps() -> bool:
 	var m := ContrabandMarket.new()
 	var light: float = m.bust_risk(2, 0.1)
 	var heavy: float = m.bust_risk(8, 0.1)
-	return heavy > light and is_equal_approx(light, 0.2)
-
-
-func test_bust_risk_clamped() -> bool:
-	var m := ContrabandMarket.new()
-	return (
+	var rises := heavy > light and is_equal_approx(light, 0.2)
+	# Clamped to 0..1 at the extremes.
+	var clamped := (
 		is_equal_approx(m.bust_risk(100, 0.5), 1.0) and is_equal_approx(m.bust_risk(0, -1.0), 0.0)
 	)
+	return rises and clamped
 
 
 func test_fluctuate_deterministic_with_seed() -> bool:
