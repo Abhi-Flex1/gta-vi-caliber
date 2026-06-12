@@ -67,6 +67,7 @@ func _ready() -> void:
 	_build_city_accents()
 	_build_map_markers()
 	_build_wetlands()
+	_build_clouds()
 	_build_swim_volume()
 
 
@@ -720,6 +721,15 @@ func _add_city_label(parent: Node, text: String, centre: Vector2, height: float)
 	label.outline_modulate = Color(0.02, 0.02, 0.025)
 	label.position = Vector3(centre.x, land_y + height + 18.0, centre.y)
 	parent.add_child(label)
+
+
+func _build_clouds() -> void:
+	# A high broken-cumulus sheet so the playable map's flat ProceduralSky gains
+	# depth and drift. CloudLayer owns the look; added here (not in the shared
+	# scene env) so the world gets a sky without touching miami.tscn.
+	var clouds := CloudLayer.new()
+	clouds.name = "CloudLayer"
+	add_child(clouds)
 
 
 func _build_wetlands() -> void:

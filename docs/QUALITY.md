@@ -5,6 +5,28 @@ bar (trailer-fidelity coastal open world). Updated by whoever runs a
 playtest/capture pass; newest entry first. Captures referenced live in
 `/tmp/gta6_playtest/` locally — judge from a fresh run, not memory.
 
+## 2026-06-12 (cont. 3) — sky gets clouds: flat gradient → broken cumulus
+
+Track Q (lighting/atmosphere — the biggest perceived lever). The playable map's
+sky is a bare `ProceduralSkyMaterial` gradient baked into miami.tscn's
+WorldEnvironment — and that scene is parallel-owned, so the env itself is
+off-limits. Reached the sky a different way: a `CloudLayer` mesh + cloud_plane
+shader added at runtime *via FloridaBackdrop* (a script I own), so the world
+gets a real sky without editing the shared scene. The shader carves drifting
+broken cumulus from fbm coverage, shades billow cores darker with a warm sun-rim,
+and dissolves only the plane's far rim so clouds persist to the horizon where
+they read densest. Dusk capture now has a dramatic textured sky over the skyline
+(`/tmp/miami_clouds2.png`) vs the old flat wash; isolation `/tmp/clouds3.png`.
+
+Perf: negligible. The ~30 ms frame at the 5-district aerial vantage is the
+streamed city, not the sheet — dropping the shader from 5→4 fbm octaves + a
+cheap single-octave billow moved frame time only ~0.1 ms, so the cloud cost is
+sub-millisecond even as near-fullscreen transparent overdraw. Guarded by
+`test_cloud_layer.gd`; reviewable via `cloud_layer_capture.gd`. Honest limit:
+it's a single flat sheet (no true volumetric parallax/godrays), tuned for the
+warm dusk grade — a daytime/overcast pass would want coverage driven by
+time-of-day, which belongs with the env owner when miami.tscn frees up.
+
 ## 2026-06-12 (cont. 2) — wetland vegetation: 150 lollipops → lush tree stands
 
 Track Q (detail/set-dressing), compounding the brighter ground below. The state
