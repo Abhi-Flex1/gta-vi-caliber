@@ -49,11 +49,21 @@ func _setup_capture() -> void:
 
 	var world := WorldEnvironment.new()
 	var env := Environment.new()
-	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(0.05, 0.06, 0.07)
-	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.42, 0.46, 0.52)
-	env.ambient_light_energy = 1.0
+	# A dusk sky doubles as backdrop and as the reflection source so chrome / glass
+	# read like they will in-game (metals are black in a void with nothing to mirror).
+	var sky_mat := ProceduralSkyMaterial.new()
+	sky_mat.sky_top_color = Color(0.12, 0.15, 0.26)
+	sky_mat.sky_horizon_color = Color(0.5, 0.32, 0.42)
+	sky_mat.ground_horizon_color = Color(0.32, 0.22, 0.28)
+	sky_mat.ground_bottom_color = Color(0.06, 0.06, 0.08)
+	sky_mat.sun_angle_max = 30.0
+	var sky := Sky.new()
+	sky.sky_material = sky_mat
+	env.background_mode = Environment.BG_SKY
+	env.sky = sky
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+	env.ambient_light_energy = 0.9
+	env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
 	env.tonemap_mode = Environment.TONE_MAPPER_ACES
 	env.glow_enabled = true
 	env.glow_intensity = 0.5

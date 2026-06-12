@@ -22,6 +22,8 @@ const NOSE_Z: float = -2.0
 const TAIL_Z: float = 2.0
 const HEADLIGHT: Vector3 = Vector3(0.36, 0.58, 0.0)
 const TAILLIGHT: Vector3 = Vector3(0.34, 0.66, 0.0)
+## Spoke count for the alloy wheel face (diameter bars → 2x visible spoke ends).
+const SPOKES: int = 5
 
 ## Body paint; metallic flake by default. Swap per-vehicle for colour variety.
 @export var paint_color: Color = Color(0.74, 0.18, 0.15)
@@ -54,20 +56,62 @@ func _ready() -> void:
 		cabin.visible = false
 
 	var rim := rim_material()
+	var brake := brake_material()
 	for wheel in WHEELS:
 		var mesh_node: MeshInstance3D = (
 			car.get_node_or_null("%s/%sMesh" % [wheel, wheel]) as MeshInstance3D
 		)
 		if mesh_node == null:
 			continue
-		var hub := MeshInstance3D.new()
-		var cyl := CylinderMesh.new()
-		cyl.top_radius = 0.2
-		cyl.bottom_radius = 0.2
-		cyl.height = 0.27
-		hub.mesh = cyl
-		hub.material_override = rim
-		mesh_node.add_child(hub)
+		_build_wheel(mesh_node, rim, brake)
+
+
+## A spoked alloy wheel: chrome rim lip, radial spokes, a proud hub cap, and a
+## dark brake disc behind. Built in WheelMesh-local space (axle = local Y), so it
+## inherits the wheel's steering, suspension and roll.
+func _build_wheel(
+	mesh_node: MeshInstance3D, rim: StandardMaterial3D, brake: StandardMaterial3D
+) -> void:
+	# Brake disc, inset just behind the spokes.
+	var disc := MeshInstance3D.new()
+	disc.name = "BrakeDisc"
+	var dcyl := CylinderMesh.new()
+	dcyl.top_radius = 0.22
+	dcyl.bottom_radius = 0.22
+	dcyl.height = 0.04
+	disc.mesh = dcyl
+	disc.material_override = brake
+	disc.position.y = -0.05
+	mesh_node.add_child(disc)
+	# Chrome rim lip around the alloy face.
+	var lip := MeshInstance3D.new()
+	lip.name = "RimLip"
+	var torus := TorusMesh.new()
+	torus.inner_radius = 0.22
+	torus.outer_radius = 0.3
+	lip.mesh = torus
+	lip.material_override = rim
+	mesh_node.add_child(lip)
+	# Radial spokes (diameter bars across the face).
+	for s in SPOKES:
+		var spoke := MeshInstance3D.new()
+		spoke.name = "Spoke%d" % s
+		var bar := BoxMesh.new()
+		bar.size = Vector3(0.5, 0.05, 0.07)
+		spoke.mesh = bar
+		spoke.material_override = rim
+		spoke.rotation.y = float(s) / float(SPOKES) * PI
+		mesh_node.add_child(spoke)
+	# Proud hub cap hides the spoke overlap at the centre.
+	var cap := MeshInstance3D.new()
+	cap.name = "HubCap"
+	var ccyl := CylinderMesh.new()
+	ccyl.top_radius = 0.08
+	ccyl.bottom_radius = 0.08
+	ccyl.height = 0.18
+	cap.mesh = ccyl
+	cap.material_override = brake
+	mesh_node.add_child(cap)
 
 
 ## Attach the lit detail that separates a premium car from a soap-bar hull:
@@ -191,6 +235,15 @@ static func taillight_material() -> StandardMaterial3D:
 	mat.emission_enabled = true
 	mat.emission = Color(1.0, 0.08, 0.03)
 	mat.emission_energy_multiplier = 3.4
+	return mat
+
+
+## Dark brushed-metal brake disc / hub.
+static func brake_material() -> StandardMaterial3D:
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.06, 0.06, 0.07)
+	mat.metallic = 0.6
+	mat.roughness = 0.45
 	return mat
 
 

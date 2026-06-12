@@ -60,6 +60,20 @@ func test_plate_is_legible_but_dim() -> bool:
 	)
 
 
+func test_rim_is_polished_chrome() -> bool:
+	var mat := CarBodyScript.rim_material()
+	return mat != null and mat.metallic > 0.8 and mat.roughness < 0.35
+
+
+func test_brake_is_dark_metal() -> bool:
+	var mat := CarBodyScript.brake_material()
+	return mat != null and mat.metallic > 0.4 and mat.albedo_color.v < 0.15
+
+
+func test_wheel_has_spokes() -> bool:
+	return CarBodyScript.SPOKES >= 4
+
+
 func test_lights_sit_at_correct_ends() -> bool:
 	# Headlights at the nose (-Z), taillights at the tail (+Z), each mirrored on X.
 	return (
