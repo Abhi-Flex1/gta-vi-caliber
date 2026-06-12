@@ -5,6 +5,27 @@ bar (trailer-fidelity coastal open world). Updated by whoever runs a
 playtest/capture pass; newest entry first. Captures referenced live in
 `/tmp/gta6_playtest/` locally — judge from a fresh run, not memory.
 
+## 2026-06-12 (cont.) — state-ground material: dark sheet → sunlit wetland
+
+Track Q (texture/material). Judged in isolation (`land_material_capture.gd`,
+neutral light, no HUD/grade) after the gameplay shots proved misleading — the
+"flat orange ground" in aerials was the golden-hour grade + warm sand backdrop,
+NOT the land material. The real fault: `florida_land.gdshader` albedos maxed at
+0.18 — a near-black green that read as a dark void at eye level
+(`/tmp/land_ground.png`) and a uniform sheet from altitude
+(`/tmp/land_aerial.png`).
+
+Fix: lifted the greens into a real sunlit range and added a fourth tonal zone —
+a large-scale independent "field" band that breaks the wet canopy into lighter
+sun-bleached clearings, layered canopy → field → dry palmetto-scrub → marsh
+(marsh darkened last so basins stay wet inside a field). Now reads as varied
+Leonida wetland at both scales (`/tmp/land_aerial_after.png`,
+`/tmp/land_ground_after.png`). Crucially preserved the hard-won distance
+specular-AA discipline (normals fade flat + roughness→1.0 past ~180 m) — only
+albedo/zone mixing changed, so no return of the far-ground sparkle. Honest
+limit: this is the *state backdrop*, not the walkable district streets; it lifts
+aerial/approach/beauty-capture shots more than street-level play.
+
 ## 2026-06-12 — open-water whitecaps: the bay stops reading as plastic
 
 Track Q (texture/material axis), in-lane water pass. The named gap "shore is a
