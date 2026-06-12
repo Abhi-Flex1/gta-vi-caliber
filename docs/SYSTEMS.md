@@ -137,3 +137,8 @@ sit in the scene. CI-gated headless by `tests/crime_reaction_probe.gd`.
 the live `player_stats` node on `request_switch()` (write the current wallet back,
 load the incoming lead's), so per-character money persists across switches. CI-gated
 headless by `tests/character_switch_probe.gd`.
+
+`AmbientEventDirector` drives `AmbientEvents` on a timer: each tick it builds
+`{stars (from the wanted group), district}`, rolls `trigger_next`, and emits
+`encounter_triggered(id, kind)` for the scene to spawn. CI-gated headless by
+`tests/ambient_event_probe.gd`.
