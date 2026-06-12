@@ -16,22 +16,43 @@ engine needs to be pushed further.
 ```bash
 # 1. Install Godot 4.6+ and git-lfs
 brew install --cask godot && brew install git-lfs && git lfs install
+#    (Linux/Windows: download Godot 4.6 from https://godotengine.org/download)
 
-# 2. Clone and open
+# 2. Clone
 git clone https://github.com/duolahypercho/gta-vi-caliber.git
 cd gta-vi-caliber
 
-# 3. Open game/ in Godot and press F5 — you're walking around the sandbox.
+# 3. Play — boots straight into the one map, no editor needed:
+godot --path game
+#    — or open it in the Godot editor and press F5:
+godot --path game --editor
 ```
+
+There is **one map** and it boots straight into play — no menus, no scene
+picker. The command above (or pressing F5 in the editor) drops you into the
+streaming Vice City world, ready to walk, drive, and trigger the wanted system.
+
+### Controls
+
+| Input | Action |
+| --- | --- |
+| `WASD` | Move |
+| `Shift` | Sprint |
+| `Space` | Jump / brake |
+| `E` | Enter / exit nearest car |
+| `C` | Look behind |
+| Mouse | Look around |
+| `Esc` | Release mouse cursor |
 
 More detail in [docs/BUILDING.md](docs/BUILDING.md).
 
 ## Project status
 
-🟢 **M0 — Bootstrap.** A playable sandbox (ground, sky, third-person character)
-exists so every clone runs immediately. See [docs/ROADMAP.md](docs/ROADMAP.md)
-for the milestone plan: walkable sandbox → driving + traffic → streaming city
-district → missions/NPCs → trailer-grade polish.
+🟢 **Playable.** Launching the game drops you straight into a single streaming
+Vice City map: a third-person character, drivable vehicles, traffic and crowds,
+and the core GTA loop wired end to end (commit crimes → wanted stars → police
+dispatch → evade or get busted), plus missions and a property/economy layer.
+See [docs/ROADMAP.md](docs/ROADMAP.md) for what's next.
 
 ## Contributing
 
