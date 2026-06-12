@@ -74,6 +74,7 @@ func _ready() -> void:
 	_build_air_banner()
 	_build_billboards()
 	_build_pier()
+	_build_lifeguard_towers()
 	_build_swim_volume()
 
 
@@ -738,6 +739,15 @@ func _build_coastal_palms() -> void:
 	palms.map_scale = map_scale
 	palms.ground_y = land_y + 0.05
 	add_child(palms)
+
+
+func _build_lifeguard_towers() -> void:
+	# The pastel Miami Beach lifeguard stands along the shore — a signature Vice
+	# City motif facing the water.
+	var towers := LifeguardTowers.new()
+	towers.name = "LifeguardTowers"
+	towers.ground_y = land_y
+	add_child(towers)
 
 
 func _build_pier() -> void:

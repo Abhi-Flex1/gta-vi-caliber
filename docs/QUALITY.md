@@ -5,6 +5,18 @@ bar (trailer-fidelity coastal open world). Updated by whoever runs a
 playtest/capture pass; newest entry first. Captures referenced live in
 `/tmp/gta6_playtest/` locally — judge from a fresh run, not memory.
 
+## 2026-06-12 (cont. 11) — pastel lifeguard stands: the Vice City motif
+
+Track Q (detail/landmark). Added `LifeguardTowers`: a row of the candy-coloured
+Art-Deco lifeguard stands of Miami Beach — one of Vice City's most photographed
+motifs. Each is a stilted hut (four timber legs, white-trim deck, open-front
+booth in a cycled pastel — flamingo pink / teal / sun yellow / coral / mint /
+sky blue, peaked red-stripe roof, red flag, back ladder) facing the water. Reads
+exactly as the real thing (`/tmp/towers.png`). 8 stands; added along the shore
+via FloridaBackdrop, verified in isolation + 4 unit tests (count, full-structure,
+spread, idempotent). Honest limit: box-built (no rounded Deco curves), and
+placed on a curated shore line rather than tied to the actual sand-vs-water edge.
+
 ## 2026-06-12 (cont. 10) — the fishing pier: the postcard's other half
 
 Track Q (detail/landmark) — closes the rest of the ledger's "palms/pier" note
