@@ -35,6 +35,7 @@ var _sign_back_mat: StandardMaterial3D
 var _amber_light_mat: StandardMaterial3D
 var _cypress_mat: StandardMaterial3D
 var _leaf_mat: StandardMaterial3D
+var _shrub_mat: StandardMaterial3D
 
 var _landmarks: FloridaLandmarks
 var _threejs: FloridaThreeJsPlacements
@@ -151,6 +152,11 @@ func _make_materials() -> void:
 	_leaf_mat.albedo_color = Color(0.12, 0.27, 0.12)
 	_leaf_mat.roughness = 0.92
 	_leaf_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+
+	_shrub_mat = StandardMaterial3D.new()
+	_shrub_mat.albedo_color = Color(0.20, 0.31, 0.13)
+	_shrub_mat.roughness = 0.93
+	_shrub_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 
 
 static func _shader_or_fallback(path: String, fallback: Color) -> Material:
@@ -717,49 +723,11 @@ func _add_city_label(parent: Node, text: String, centre: Vector2, height: float)
 
 
 func _build_wetlands() -> void:
-	var trunk_mesh := CylinderMesh.new()
-	trunk_mesh.top_radius = 0.28
-	trunk_mesh.bottom_radius = 0.44
-	trunk_mesh.height = 5.2
-	var crown_mesh := SphereMesh.new()
-	crown_mesh.radius = 2.2
-	crown_mesh.height = 3.2
-
-	var trunks := MultiMesh.new()
-	trunks.transform_format = MultiMesh.TRANSFORM_3D
-	trunks.mesh = trunk_mesh
-	var crowns := MultiMesh.new()
-	crowns.transform_format = MultiMesh.TRANSFORM_3D
-	crowns.mesh = crown_mesh
-
+	# Cluster each wetland seed point into layered cypress + shrub understory.
+	# WetlandFlora owns the look (and its own tests); the count of seed points
+	# stays FloridaMapModel-driven so the wetlands keep their spatial spread.
 	var points := FloridaMapModel.wetland_points(wetland_count, map_scale)
-	trunks.instance_count = points.size()
-	crowns.instance_count = points.size()
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 811
-	for i in points.size():
-		var p := points[i]
-		var s := rng.randf_range(0.75, 1.45)
-		var yaw := Basis(Vector3.UP, rng.randf() * TAU)
-		var trunk_basis := yaw.scaled(Vector3(s, s, s))
-		trunks.set_instance_transform(
-			i, Transform3D(trunk_basis, Vector3(p.x, land_y + 2.6 * s, p.y))
-		)
-		crowns.set_instance_transform(
-			i, Transform3D(trunk_basis, Vector3(p.x, land_y + 6.0 * s, p.y))
-		)
-
-	var trunk_layer := MultiMeshInstance3D.new()
-	trunk_layer.name = "WetlandCypressTrunks"
-	trunk_layer.multimesh = trunks
-	trunk_layer.material_override = _cypress_mat
-	add_child(trunk_layer)
-
-	var crown_layer := MultiMeshInstance3D.new()
-	crown_layer.name = "WetlandCypressCrowns"
-	crown_layer.multimesh = crowns
-	crown_layer.material_override = _leaf_mat
-	add_child(crown_layer)
+	WetlandFlora.build(self, points, land_y, _cypress_mat, _leaf_mat, _shrub_mat)
 
 
 func _build_map_markers() -> void:

@@ -5,6 +5,21 @@ bar (trailer-fidelity coastal open world). Updated by whoever runs a
 playtest/capture pass; newest entry first. Captures referenced live in
 `/tmp/gta6_playtest/` locally — judge from a fresh run, not memory.
 
+## 2026-06-12 (cont. 2) — wetland vegetation: 150 lollipops → lush tree stands
+
+Track Q (detail/set-dressing), compounding the brighter ground below. The state
+wetland scattered exactly 150 cylinder+sphere "lollipop" trees across a ~12 km
+landmass — effectively bare, and crude in form. Extracted the vegetation into a
+testable `WetlandFlora` builder and made it cluster each FloridaMapModel seed
+point into a jittered stand of cypress (trunk + two stacked columnar crowns with
+per-instance olive→green tone variation) over a denser palmetto shrub understory.
+150 seeds now yield ~650 trees / ~1300 crowns / ~1000 shrubs — still just 3
+MultiMesh draw calls, so perf-safe. Reads as believable Leonida scrubland
+(`/tmp/wetland_flora.png`) instead of sparse dots. Verified in isolation
+(`wetland_flora_capture.gd`) + 4 unit tests (`test_wetland_flora.gd`). Honest
+limit: sphere-crown trees read well at backdrop/aerial distance but aren't
+close-up foliage; this is state backdrop, not the walkable district streets.
+
 ## 2026-06-12 (cont.) — state-ground material: dark sheet → sunlit wetland
 
 Track Q (texture/material). Judged in isolation (`land_material_capture.gd`,
