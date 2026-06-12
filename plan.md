@@ -1,23 +1,78 @@
-# PLAN — From here to a complete GTA-VI-caliber game
+# PLAN — Can a swarm of AI agents build GTA VI before Rockstar ships it?
 
-This is the single end-to-end plan: the path from the current build to a
-finished, shippable open-world game in the spirit of GTA VI (original IP, Vice
-City / Miami setting). It sits **above** [`docs/ROADMAP.md`](docs/ROADMAP.md) —
-the roadmap is the live task board (M0–M6); this file is the multi-phase
-strategy, the honest scope, and the cut line.
+**This is an experiment, framed as a plan.** The real question underneath all
+the milestones below is a research question:
+
+> **Can a branching swarm of Claude / Fable coding agents, working continuously
+> under one shared contract, build a GTA-VI-caliber open-world game — and how
+> far can they get before the real GTA VI actually releases?**
+
+The deadline is the experiment's clock: **GTA VI itself.** Whatever this repo
+looks like the day Rockstar ships is the result. We are not racing them to
+*win* — they have ~1000 people and a decade. We are measuring **how close an
+autonomous AI agent fleet gets**, on an open engine, with original assets, from
+a standing start. That number — and everything we learn making it as high as
+possible — is the actual deliverable.
+
+So this document is two things at once:
+
+1. **The experiment's protocol** — the hypothesis, the conditions, what counts
+   as a result (§0).
+2. **The build plan the agents execute** — the path from the current build to a
+   finished open-world game in the spirit of GTA VI (original IP, Vice City /
+   Miami setting), as phased milestones with hard exit gates (§2 onward).
+
+It sits **above** [`docs/ROADMAP.md`](docs/ROADMAP.md) — the roadmap is the live
+task board (M0–M6); this file is the strategy, the honest scope, and the cut
+line.
 
 > Steering rule: when this plan and `docs/ROADMAP.md` disagree, fix one of them
 > in the same PR. Agents read both. Keep tasks small, concrete, verifiable.
 
 ---
 
-## 0. Honest scope — read this first
+## 0. The experiment — read this first
+
+### Hypothesis
+
+A fleet of AI agents, branching and merging under a single playable-trunk
+contract ([[multi-agent-swarm-setup]]), can take an open engine (Godot 4.6) and
+autonomously produce a coherent, shippable, GTA-inspired open-world game — and
+the honest ceiling of what they reach is set by **content volume and renderer
+hardware, not by the agents' ability to design and wire systems.**
+
+### Conditions of the experiment
+
+- **The clock:** the public release of the real GTA VI. Wherever this repo is on
+  that day is the recorded result — tag it, capture a trailer, write it up.
+- **The fleet:** multiple Claude / Fable agents on lane discipline, steered by
+  humans editing this file and `docs/ROADMAP.md` — the roadmap is the shared
+  steering wheel, not per-task prompting.
+- **The rules that make the result honest** (these *are* the experiment, not
+  bureaucracy): `main` always runs; every wired feature ships with a runtime
+  probe; original assets only with provenance; native code only with a captured
+  profile. An agent fleet that cheats these produces a result that means nothing.
+- **What we measure:** how far up each axis below the fleet climbs (systems
+  feel, visual fidelity, content scale, "is it a finished game") before the
+  clock runs out — plus the meta-result: *what did building it teach us about
+  agent swarms doing long-horizon, multi-month creative engineering?*
+
+### Why it's a good experiment
+
+It is long-horizon (months, not one session), multi-agent (coordination under
+merge races), creative *and* technical (art direction + C++ streaming), and it
+has a **brutally objective yardstick** — the actual GTA VI — that no amount of
+self-grading can fudge. Most agent benchmarks are toy tasks with easy oracles;
+this one is open-ended, adversarial against reality, and the gap is measurable
+in screenshots. Win or lose, the delta is the data.
+
+### Honest scope — what "as far as possible" realistically means
 
 A *literal* "complete GTA 6" is a ~1000-person, multi-year, nine-figure
 production: ~50 hours of bespoke narrative, full voice cast, motion-capture,
-licensed radio, online services. We are not pretending to match that headcount.
-
-**What we are actually building**, and what "complete" means here:
+licensed radio, online services. The fleet is not pretending to match that
+headcount. The result the fleet is actually driving toward, and what "complete"
+means for this experiment:
 
 - A **finished, coherent, shippable game** — title screen to credits — not a
   tech demo. It has a beginning, a playable middle, and an end.
