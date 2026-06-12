@@ -337,7 +337,7 @@ static void test_flow_open_points_to_goal() {
     std::vector<double> costs(25, 1.0);
     const int goal = g.index(2, 2);
     const std::vector<double> dist = integrate(g, costs, goal);
-    const std::vector<Vec2> flow = flow_from(g, dist);
+    const std::vector<Vec2> flow = flow_from(g, costs, dist);
     const Vec2 f = flow[g.index(0, 0)]; // corner steers toward the centre (+x,+z)
     CHECK(f.x > 0.0 && f.z > 0.0);
     CHECK(flow[goal].x == 0.0 && flow[goal].z == 0.0); // goal cell has no flow
@@ -348,7 +348,7 @@ static void test_flow_wall_blocks_unreachable() {
     Grid g{3, 1};
     std::vector<double> costs = {1.0, -1.0, 1.0}; // wall in the middle
     const std::vector<double> dist = integrate(g, costs, 2);
-    const std::vector<Vec2> flow = flow_from(g, dist);
+    const std::vector<Vec2> flow = flow_from(g, costs, dist);
     CHECK(!std::isfinite(dist[0])); // left cell cannot reach the goal past the wall
     CHECK(flow[0].x == 0.0 && flow[0].z == 0.0);
 }
@@ -361,9 +361,21 @@ static void test_flow_routes_around_wall() {
     costs[g.index(1, 1)] = -1.0; // wall — blocks the straight path to the goal
     const int goal = g.index(2, 1);
     const std::vector<double> dist = integrate(g, costs, goal);
-    const std::vector<Vec2> flow = flow_from(g, dist);
+    const std::vector<Vec2> flow = flow_from(g, costs, dist);
     const Vec2 f = flow[g.index(0, 1)]; // left-middle must route down around the wall
     CHECK(f.z > 0.0); // heads +z (down) instead of straight into the wall
+}
+
+static void test_flow_no_diagonal_corner_cut() {
+    using namespace worldcore_flow;
+    Grid g{2, 2};
+    // goal at (0,0); walls at (1,0) and (0,1) box in the diagonal cell (1,1).
+    std::vector<double> costs = {1.0, -1.0, -1.0, 1.0};
+    const std::vector<double> dist = integrate(g, costs, g.index(0, 0));
+    const std::vector<Vec2> flow = flow_from(g, costs, dist);
+    // (1,1) must NOT reach the goal by cutting the wall corner.
+    CHECK(!std::isfinite(dist[g.index(1, 1)]));
+    CHECK(flow[g.index(1, 1)].x == 0.0 && flow[g.index(1, 1)].z == 0.0);
 }
 
 int main() {
@@ -400,6 +412,7 @@ int main() {
     test_flow_open_points_to_goal();
     test_flow_wall_blocks_unreachable();
     test_flow_routes_around_wall();
+    test_flow_no_diagonal_corner_cut();
     if (failures > 0) {
         std::fprintf(stderr, "engine tests: %d failure(s)\n", failures);
         return 1;

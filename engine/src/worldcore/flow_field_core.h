@@ -47,9 +47,31 @@ inline const double *neighbour_step() {
     return s;
 }
 
+// A diagonal step (k >= 4) "cuts a corner" if either of the two orthogonal cells
+// it passes between is a wall. Forbidding it stops agents clipping through wall
+// corners. Returns true when the diagonal from (cx,cz) in direction k is blocked.
+inline bool diagonal_cuts_corner(
+        const Grid &g, const std::vector<double> &costs, int cx, int cz, int k) {
+    if (k < 4) {
+        return false;
+    }
+    const int *dx = neighbour_dx();
+    const int *dz = neighbour_dz();
+    const int ax = cx + dx[k];
+    const int bz = cz + dz[k];
+    if (!g.in_bounds(ax, cz) || costs[g.index(ax, cz)] < 0.0) {
+        return true;
+    }
+    if (!g.in_bounds(cx, bz) || costs[g.index(cx, bz)] < 0.0) {
+        return true;
+    }
+    return false;
+}
+
 // Dijkstra integration field from `goal_cell`. `costs[i] < 0` marks an
 // impassable cell (wall); otherwise costs[i] is the per-cell movement cost
-// (>=1 typical). Returns per-cell distance-to-goal; unreachable cells are +inf.
+// (>=1 typical), charged for the cell being ENTERED toward the goal. Returns
+// per-cell distance-to-goal; unreachable cells are +inf.
 inline std::vector<double> integrate(
         const Grid &g, const std::vector<double> &costs, int goal_cell) {
     const double inf = std::numeric_limits<double>::infinity();
@@ -83,7 +105,12 @@ inline std::vector<double> integrate(
             if (costs[nc] < 0.0) {
                 continue; // wall
             }
-            const double nd = dist[c] + step[k] * costs[nc];
+            if (diagonal_cuts_corner(g, costs, cx, cz, k)) {
+                continue; // don't let the field flow diagonally through a corner
+            }
+            // Charge the cost of the cell entered on the forward move (nc -> c
+            // heads toward the goal, so the agent enters c).
+            const double nd = dist[c] + step[k] * costs[c];
             if (nd < dist[nc]) {
                 dist[nc] = nd;
                 pq.push(std::make_pair(nd, nc));
@@ -94,9 +121,11 @@ inline std::vector<double> integrate(
 }
 
 // Per-cell flow direction: a unit vector toward the 8-neighbour with the lowest
-// integration distance (downhill toward the goal). Zero at the goal and on
-// unreachable cells.
-inline std::vector<Vec2> flow_from(const Grid &g, const std::vector<double> &dist) {
+// integration distance (downhill toward the goal), skipping diagonals that cut a
+// wall corner. Zero at the goal and on unreachable cells. Needs `costs` to apply
+// the same corner rule the integration used.
+inline std::vector<Vec2> flow_from(
+        const Grid &g, const std::vector<double> &costs, const std::vector<double> &dist) {
     std::vector<Vec2> flow(
             static_cast<size_t>(g.width) * static_cast<size_t>(g.height), Vec2{0.0, 0.0});
     const int *dx = neighbour_dx();
@@ -113,6 +142,9 @@ inline std::vector<Vec2> flow_from(const Grid &g, const std::vector<double> &dis
                 const int nx = cx + dx[k];
                 const int nz = cz + dz[k];
                 if (!g.in_bounds(nx, nz)) {
+                    continue;
+                }
+                if (diagonal_cuts_corner(g, costs, cx, cz, k)) {
                     continue;
                 }
                 const double nd = dist[g.index(nx, nz)];

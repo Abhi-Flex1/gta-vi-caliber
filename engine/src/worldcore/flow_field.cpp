@@ -61,11 +61,12 @@ void FlowField::build(int p_width, int p_height, const PackedFloat32Array &p_cos
 
     const Grid g{grid_width, grid_height};
     const int goal_cell = _cell_of(p_goal_world);
-    if (goal_cell < 0) {
+    // A goal off-grid or on a wall yields no usable field — don't claim built.
+    if (goal_cell < 0 || costs[static_cast<size_t>(goal_cell)] < 0.0) {
         return;
     }
     const std::vector<double> dist = worldcore_flow::integrate(g, costs, goal_cell);
-    flow = worldcore_flow::flow_from(g, dist);
+    flow = worldcore_flow::flow_from(g, costs, dist);
     built = true;
 }
 
