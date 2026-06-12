@@ -110,7 +110,7 @@ jobs:
         run: ~/godot-bin/godot --headless --path game --import
       - name: Install native manifest
         if: matrix.platform == 'linux'
-        run: cp engine/gta_native.gdextension.example game/bin/gta_native.gdextension
+        run: cp engine/worldcore.gdextension.example game/bin/worldcore.gdextension
       - name: Native smoke test
         if: matrix.platform == 'linux'
         run: ~/godot-bin/godot --headless --path game --script res://tests/native_smoke_test.gd
