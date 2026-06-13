@@ -64,6 +64,8 @@ func _run_checks() -> void:
 	var players := get_nodes_in_group("player")
 	if players.size() == 1 and players[0] is not CharacterBody3D:
 		_failures.append("player group node is not a CharacterBody3D")
+	if players.size() == 1 and (players[0] as Node).get_node_or_null("MeleeController") == null:
+		_failures.append("player scene has no MeleeController (unarmed combat dead)")
 
 
 func _expect_one(group_name: String) -> void:
