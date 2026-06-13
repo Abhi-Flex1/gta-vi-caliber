@@ -47,6 +47,10 @@ varying vec2 v_param;
 // Vertical displacement, for subtle crest tinting.
 varying float v_crest;
 varying vec3 v_world_pos;
+// Precomputed world-space normal from the vertex stage (mirrors the wave
+// displacement so shading stays consistent without recomputing all 5 waves
+// per fragment — a major GPU saving on a large water surface).
+varying vec3 v_normal_world;
 
 // Mirrors OceanMath.displacement().
 vec3 gerstner_offset(vec2 p, float t, float amp_scale) {
@@ -99,10 +103,11 @@ void vertex() {
 	v_crest = off.y;
 	VERTEX += off;
 	v_world_pos = VERTEX;
+	v_normal_world = gerstner_normal(v_param, u_time, u_amplitude_scale);
 }
 
 void fragment() {
-	vec3 n_world = gerstner_normal(v_param, u_time, u_amplitude_scale);
+	vec3 n_world = v_normal_world;
 	NORMAL = normalize(mat3(VIEW_MATRIX) * n_world);
 
 	// Water column thickness along the view ray: opaque scene depth minus
@@ -139,12 +144,19 @@ void fragment() {
 	// at the sand, pulsing with the longest wave so the surf line breathes,
 	// plus whitecap foam on the steepest crests. Noise breaks the band into
 	// streaks so it reads as wash, not a painted stripe.
+	float frag_cam_dist = length(v_world_pos - CAMERA_POSITION_WORLD);
 	float foam_band = 1.0 - smoothstep(0.0, u_foam_depth, thickness);
 	float surf_pulse = 0.7 + 0.3 * sin(u_time * 0.9 + v_param.x * 0.05);
-	float streaks = foam_noise(v_param * 0.35 + vec2(u_time * 0.25, 0.0));
-	streaks = streaks * 0.6 + 0.4 * foam_noise(v_param * 1.4 - vec2(0.0, u_time * 0.4));
-	float foam = clamp(foam_band * surf_pulse * smoothstep(0.35, 0.85, streaks) * 1.6, 0.0, 1.0);
-	foam += crest * smoothstep(0.5, 0.9, streaks) * 0.8;
+	float foam = 0.0;
+	if (frag_cam_dist < 120.0) {
+		float streaks = foam_noise(v_param * 0.35 + vec2(u_time * 0.25, 0.0));
+		streaks = streaks * 0.6 + 0.4 * foam_noise(v_param * 1.4 - vec2(0.0, u_time * 0.4));
+		foam = clamp(foam_band * surf_pulse * smoothstep(0.35, 0.85, streaks) * 1.6, 0.0, 1.0);
+		foam += crest * smoothstep(0.5, 0.9, streaks) * 0.8;
+	} else {
+		foam = clamp(foam_band * surf_pulse * 0.5, 0.0, 1.0);
+		foam += crest * 0.35;
+	}
 	foam = clamp(foam * u_foam_strength, 0.0, 1.0);
 	albedo = mix(albedo, u_foam_color.rgb, foam);
 	alpha = mix(alpha, 1.0, foam * 0.85);
