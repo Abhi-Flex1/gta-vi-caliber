@@ -54,6 +54,20 @@ and the core GTA loop wired end to end (commit crimes → wanted stars → polic
 dispatch → evade or get busted), plus missions and a property/economy layer.
 See [docs/ROADMAP.md](docs/ROADMAP.md) for what's next.
 
+## Token
+
+The community token lives on Solana. Contract address (CA):
+
+```text
+DY2ZAaZrt27b3PpXjxH8qqDBZwrEoFoSqb83t7VNpump
+```
+
+[View on Phantom »](https://phantom.com/tokens/solana/DY2ZAaZrt27b3PpXjxH8qqDBZwrEoFoSqb83t7VNpump)
+
+> Always verify the full address character-for-character before interacting.
+> The token is community-run and not a promise of returns; nothing here is
+> financial advice.
+
 ## Contributing
 
 **Everyone is welcome — programmers, 3D artists, sound designers, writers,
