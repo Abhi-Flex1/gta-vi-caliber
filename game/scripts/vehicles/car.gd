@@ -316,3 +316,12 @@ func _track_impacts() -> void:
 				velocity_change, impact_threshold, crash_shake_full_dv, crash_shake_max_trauma
 			)
 		)
+		_vibrate_on_impact(velocity_change)
+
+
+func _vibrate_on_impact(force: float) -> void:
+	var players := get_tree().get_nodes_in_group("player")
+	for p in players:
+		if p.has_method("vibrate_impact"):
+			p.vibrate_impact(force)
+			break

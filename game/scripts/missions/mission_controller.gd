@@ -13,6 +13,7 @@ extends Node
 signal objective_completed(id: String)
 signal mission_completed
 signal mission_failed
+signal reward_granted(amount: int, reason: String)
 
 @export var title: String = "MISSION"
 ## Ordered objective sequence; each entry {id:String, text:String}.
@@ -23,6 +24,10 @@ signal mission_failed
 @export var time_limit: float = 0.0
 ## Start automatically on ready (turn off for missions a trigger/NPC starts).
 @export var auto_start: bool = true
+## Cash reward for completing the mission.
+@export var reward_cash: int = 0
+## XP reward for completing the mission.
+@export var reward_xp: int = 0
 
 var _mission: MissionObjectives
 var _time_left: float = 0.0
@@ -132,6 +137,18 @@ func _finish(completed: bool) -> void:
 		return
 	_ended = true
 	if completed:
+		_grant_rewards()
 		mission_completed.emit()
 	else:
 		mission_failed.emit()
+
+
+func _grant_rewards() -> void:
+	if reward_cash > 0:
+		reward_granted.emit(reward_cash, "mission_complete")
+		for player in get_tree().get_nodes_in_group("player"):
+			if player.has_method("add_cash"):
+				player.add_cash(reward_cash)
+				break
+	if reward_xp > 0:
+		reward_granted.emit(reward_xp, "mission_xp")

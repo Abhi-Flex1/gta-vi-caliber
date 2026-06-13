@@ -91,18 +91,31 @@ var _look_idle: float = 0.0
 var _inspect_light: SpotLight3D = null
 var _inspect_rim_light: OmniLight3D = null
 var _inspect_eye_light: OmniLight3D = null
+var _base_sensitivity: float
+var _base_stick_sensitivity: float
+var _controller_enabled: bool = true
 
 @onready var _arm: SpringArm3D = $SpringArm
 @onready var _camera: Camera3D = $SpringArm/Camera
 
 
 func _ready() -> void:
+	add_to_group("sensitivity_aware")
+	add_to_group("controller_aware")
 	_arm.position = shoulder_offset
 	_camera.fov = base_fov
 	_pitch = _arm.rotation.x
 	_shake_noise = FastNoiseLite.new()
 	_apply_camera_attributes()
 	_create_inspect_light()
+
+	_base_sensitivity = sensitivity
+	_base_stick_sensitivity = stick_sensitivity
+
+	var cfg := SettingsPanel.load_settings()
+	var sens_val := float(cfg.get("sensitivity", 0.5))
+	set_sensitivity_multiplier(SettingsPanel.sensitivity_to_multiplier(sens_val))
+	_controller_enabled = bool(cfg.get("controller", true))
 
 
 ## Attach far-field depth of field to the camera for a cinematic depth cue.
@@ -301,6 +314,8 @@ func _update_shake(delta: float) -> void:
 ## mouse motion, which arrives as discrete events). Shares the yaw/pitch model
 ## and pitch clamp with mouse-look so both feel identical.
 func _apply_stick_look(delta: float) -> void:
+	if not _controller_enabled:
+		return
 	var raw := Vector2(
 		Input.get_joy_axis(0, JOY_AXIS_RIGHT_X), Input.get_joy_axis(0, JOY_AXIS_RIGHT_Y)
 	)
@@ -321,3 +336,12 @@ func _unhandled_input(event: InputEvent) -> void:
 	_look_idle = 0.0
 	rotation.y -= motion.relative.x * sensitivity
 	_pitch = clampf(_pitch - motion.relative.y * sensitivity, PITCH_MIN, PITCH_MAX)
+
+
+func set_sensitivity_multiplier(mult: float) -> void:
+	sensitivity = _base_sensitivity * mult
+	stick_sensitivity = _base_stick_sensitivity * mult
+
+
+func set_controller_enabled(enabled: bool) -> void:
+	_controller_enabled = enabled

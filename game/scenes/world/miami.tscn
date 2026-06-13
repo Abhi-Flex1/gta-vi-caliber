@@ -50,6 +50,7 @@
 [ext_resource type="PackedScene" path="res://scenes/npc/citizen.tscn" id="44_citizen"]
 [ext_resource type="Script" path="res://scripts/world/night_lights_switch.gd" id="45_nightlights"]
 [ext_resource type="Script" path="res://scripts/world/coastal_prop_placements.gd" id="40_coastal_props"]
+[ext_resource type="PackedScene" path="res://scenes/ui/pause_menu.tscn" id="46_pause"]
 
 [sub_resource type="BoxShape3D" id="payspray_shape"]
 size = Vector3(12, 6, 12)
@@ -131,7 +132,7 @@ adjustment_brightness = 1.0
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("env")
 script = ExtResource("6_quality")
-minimum_tier = 2
+minimum_tier = 3
 
 [node name="Sun" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.94, 0.18, -0.29, 0, 0.85, 0.53, 0.34, -0.5, 0.8, 0, 80, 0)
@@ -219,6 +220,8 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
 [node name="DebugHud" parent="." instance=ExtResource("2_hud")]
 
 [node name="GameHud" parent="." instance=ExtResource("7_gamehud")]
+
+[node name="PauseMenu" parent="." instance=ExtResource("46_pause")]
 
 [node name="StreamingHud" type="CanvasLayer" parent="."]
 script = ExtResource("9_shud")

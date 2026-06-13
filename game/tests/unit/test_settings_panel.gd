@@ -43,6 +43,19 @@ func test_sensitivity_monotonic() -> bool:
 	return a < 1.0 and b > 1.0 and a < b
 
 
+func test_defaults_has_controller_and_touch() -> bool:
+	var d := SettingsPanel.defaults()
+	return d.has("controller") and d.has("touch")
+
+
+func test_defaults_controller_enabled_by_default() -> bool:
+	return SettingsPanel.defaults()["controller"] == true
+
+
+func test_defaults_touch_disabled_by_default() -> bool:
+	return SettingsPanel.defaults()["touch"] == false
+
+
 func test_defaults_round_trip_shape() -> bool:
 	var d := SettingsPanel.defaults()
 	return d.has("volume") and d.has("fullscreen") and d.has("sensitivity") and d.has("graphics")

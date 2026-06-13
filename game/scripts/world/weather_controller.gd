@@ -40,10 +40,11 @@ var _sky_paints_fog: bool = false
 var _clear_air := Color(0.7, 0.74, 0.8)
 var _clear_volumetric_density: float = 0.003
 var _wet_base_roughness: Dictionary = {}
+var _lightning: LightningSystem = null
 
 
 func _ready() -> void:
-	add_to_group("weather")  # citizens find it here to comment on the sky
+	add_to_group("weather")
 	_cycle = start_cycle
 	_env = get_node_or_null(environment_path) as WorldEnvironment
 	var rain_node := get_node_or_null(rain_path)
@@ -51,13 +52,13 @@ func _ready() -> void:
 	_rain = rain_node as GPUParticles3D
 	if _env != null and _env.environment != null:
 		_clear_air = _env.environment.fog_light_color
-		# Authored clear-air volumetric density (already resolved by WorldQuality,
-		# which runs earlier in the tree); storms grow the haze up from here.
 		_clear_volumetric_density = _env.environment.volumetric_fog_density
-	# A SkyController (group "sky") repaints fog colour every frame before
-	# weather runs; without one we blend from the scene's authored air instead.
 	_sky_paints_fog = get_tree().get_first_node_in_group("sky") != null
 	_resolve_sky_material()
+	# Lightning system: child of the weather controller, active during storms.
+	_lightning = LightningSystem.new()
+	_lightning.name = "LightningSystem"
+	add_child(_lightning)
 	_apply()
 
 
@@ -80,6 +81,8 @@ func _apply() -> void:
 	_apply_clouds()
 	_apply_rain()
 	_apply_wetness()
+	if _lightning != null:
+		_lightning.set_rain_level(_state.rain)
 
 
 func _apply_fog() -> void:

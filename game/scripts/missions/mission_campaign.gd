@@ -48,13 +48,12 @@ func _process(_delta: float) -> void:
 
 
 func _missions() -> Array:
-	# Five-mission opening arc. Positions are absolute world coordinates near
-	# the downtown spawn; MissionController converts to engine-local at read
-	# time, so they survive FloatingOrigin shifts.
 	return [
 		{
 			"id": "intro",
 			"title": "WELCOME TO VICE CITY",
+			"reward_cash": 500,
+			"reward_xp": 100,
 			"objectives":
 			[
 				_reach("reach_car", "Get in your car", Vector3(7, 1, 5)),
@@ -65,6 +64,8 @@ func _missions() -> Array:
 		{
 			"id": "pickup",
 			"title": "THE PICKUP",
+			"reward_cash": 750,
+			"reward_xp": 150,
 			"objectives":
 			[
 				_reach("m2_stash", "Collect the stash from the alley", Vector3(-58, 1, 34)),
@@ -76,6 +77,8 @@ func _missions() -> Array:
 			"id": "heat",
 			"title": "HEAT",
 			"time_limit": 150.0,
+			"reward_cash": 1000,
+			"reward_xp": 200,
 			"objectives":
 			[
 				_reach("m3_wheels", "Grab fresh wheels — move!", Vector3(16, 1, -28)),
@@ -90,6 +93,8 @@ func _missions() -> Array:
 		{
 			"id": "deal",
 			"title": "THE DEAL",
+			"reward_cash": 1500,
+			"reward_xp": 250,
 			"objectives":
 			[
 				_hold("m4_meet", "Hold the meet — show them you're alone", Vector3(62, 1, 38), 3.0),
@@ -101,6 +106,8 @@ func _missions() -> Array:
 			"id": "kingpin",
 			"title": "KINGPIN",
 			"time_limit": 180.0,
+			"reward_cash": 3000,
+			"reward_xp": 500,
 			"objectives":
 			[
 				_reach("m5_collect", "Collect tribute across town", Vector3(-88, 1, 52), 7.0),
@@ -131,6 +138,8 @@ func _load_current() -> void:
 	_controller.objective_defs = objective_defs
 	_controller.waypoints = waypoints
 	_controller.time_limit = float(mission.get("time_limit", 0.0))
+	_controller.reward_cash = int(mission.get("reward_cash", 0))
+	_controller.reward_xp = int(mission.get("reward_xp", 0))
 	if _controller.has_method("reset"):
 		_controller.reset()
 	_driver.defs = driver_defs

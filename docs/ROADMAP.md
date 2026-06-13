@@ -41,7 +41,7 @@ Goal: moving around is *fun* before there is anything to do.
 - [x] Camera: collision probe, shoulder offset, FOV kick on sprint
 - [x] Footstep audio hooked to surface type
 - [x] Greybox "movement playground" scene with stairs, slopes, gaps, ladders
-- [ ] Gamepad support + rebindable input
+- [x] Gamepad support + rebindable input
 
 ## M2 — Vehicles
 
@@ -83,7 +83,7 @@ Goal: one city district that feels inhabited.
     instead of straight wander; gawk reaction. Demo:
     `scenes/world/living_city.tscn` (crowd + traffic).
 - [x] Time-of-day cycle driving sun, streetlights, building windows
-- [ ] Weather fronts: clear → overcast → rain, wet-surface materials
+- [x] Weather fronts: clear → overcast → rain, wet-surface materials
 - [x] Ocean v1: Gerstner/FFT water with shoreline blend (**`engine/` candidate**)
 
 ## M5 — Play
@@ -91,7 +91,7 @@ Goal: one city district that feels inhabited.
 Goal: it is a *game* now.
 
 - [ ] Mission framework (triggers, objectives, fail/retry) + 3 sample missions
-- [ ] Wanted/heat system with police response escalation
+- [x] Wanted/heat system with police response escalation
 - [ ] Minimap + full map UI
 - [ ] Radio: streaming music channels in vehicles (CC-licensed tracks)
 - [ ] Save/load of world + player state
@@ -105,7 +105,7 @@ Goal: the acceptance test — a 90-second in-engine trailer from a release build
 - [ ] Ocean v2: foam, wakes, buoyancy
 - [ ] Crowd density pass (**`engine/`: GPU-driven crowd rendering**)
 - [x] Cinematic camera tooling for capture
-- [ ] Performance lockdown: 60 FPS @ 1080p mid-range GPU, captured profiles
+- [x] Performance lockdown: 60 FPS @ 1080p mid-range GPU, captured profiles
 - [ ] Cut, score, and publish the trailer
 
 ---

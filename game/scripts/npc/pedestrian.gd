@@ -8,7 +8,7 @@ extends CharacterBody3D
 ## hits a dummy drops a pedestrian — and scares the rest into fleeing.
 
 @export var walk_speed: float = 2.4
-@export var run_speed: float = 6.0
+@export var run_speed: float = 2.4
 @export var wander_radius: float = 12.0
 @export var arrive_tolerance: float = 1.0
 @export var idle_time: float = 1.6
@@ -32,6 +32,10 @@ var _dead: bool = false
 var _hp: Damageable
 var _rng := RandomNumberGenerator.new()
 var _flinch_until: float = 0.0
+var _died_toppled: bool = false
+var _knockback_timer: float = 0.0
+var _ped_path: PackedVector3Array = PackedVector3Array()
+var _ped_path_index: int = 0
 
 @onready var _rig: AnimatedRig = $Rig
 
@@ -41,12 +45,26 @@ func _ready() -> void:
 	_home = global_position
 	_hp = Damageable.new(max_health)
 	add_to_group("pedestrians")
+	_rig.walk_speed = walk_speed
+	_rig.run_speed = run_speed
 	_pick_new_target()
 
 
 func _physics_process(delta: float) -> void:
 	if _dead:
+		if not _died_toppled:
+			_died_toppled = true
+			_topple_rig()
 		_fall(delta)
+		return
+
+	if _knockback_timer > 0.0:
+		_knockback_timer -= delta
+		if not is_on_floor():
+			velocity += get_gravity() * delta
+		move_and_slide()
+		_check_vehicle_impact()
+		_rig.animate(Vector3(velocity.x, 0.0, velocity.z), is_on_floor(), velocity.y, false, delta)
 		return
 
 	_fear = maxf(_fear - delta, 0.0)
@@ -71,9 +89,14 @@ func _physics_process(delta: float) -> void:
 			desired_dir = NpcBrain.flee_dir(global_position, _threat_pos)
 		NpcBrain.State.WANDER:
 			if NpcBrain.arrived(global_position, _target, arrive_tolerance):
-				_state = NpcBrain.State.IDLE
-				_idle_left = idle_time
-				speed = 0.0
+				_ped_path_index += 1
+				if _ped_path_index < _ped_path.size():
+					_target = _ped_path[_ped_path_index]
+					desired_dir = NpcBrain.planar_dir(global_position, _target)
+				else:
+					_state = NpcBrain.State.IDLE
+					_idle_left = idle_time
+					speed = 0.0
 			else:
 				desired_dir = NpcBrain.planar_dir(global_position, _target)
 		NpcBrain.State.IDLE:
@@ -87,6 +110,7 @@ func _physics_process(delta: float) -> void:
 	velocity.x = move_toward(velocity.x, target_v.x, acceleration * delta)
 	velocity.z = move_toward(velocity.z, target_v.z, acceleration * delta)
 	move_and_slide()
+	_check_vehicle_impact()
 	_rig.animate(Vector3(velocity.x, 0.0, velocity.z), is_on_floor(), velocity.y, false, delta)
 
 
@@ -106,6 +130,7 @@ func _answer_call(delta: float) -> void:
 	if not is_on_floor():
 		velocity += get_gravity() * delta
 	move_and_slide()
+	_check_vehicle_impact()
 	_rig.set_phone(true)
 	_rig.animate(Vector3(velocity.x, 0.0, velocity.z), is_on_floor(), velocity.y, false, delta)
 
@@ -147,13 +172,64 @@ func _fall(delta: float) -> void:
 	if not is_on_floor():
 		velocity += get_gravity() * delta
 	move_and_slide()
+	_rig.animate(Vector3.ZERO, is_on_floor(), velocity.y, false, delta)
+
+
+func _check_vehicle_impact() -> void:
+	if _dead:
+		return
+	for i in get_slide_collision_count():
+		var col := get_slide_collision(i)
+		var collider := col.get_collider()
+		if collider != null and (collider.is_in_group("vehicles") or collider is VehicleBody3D):
+			var vel: Vector3 = Vector3.ZERO
+			if "linear_velocity" in collider:
+				vel = collider.linear_velocity
+			elif "velocity" in collider:
+				vel = collider.velocity
+
+			var speed := vel.length()
+			if speed > 2.5:
+				var impact_dir := vel.normalized()
+				velocity = impact_dir * speed * 1.2 + Vector3.UP * (speed * 0.45)
+				_knockback_timer = 0.8
+				var damage := speed * 3.5
+				take_damage(damage, global_position, -impact_dir)
+				break
+
+
+func _topple_rig() -> void:
+	var forward := -global_transform.basis.z.normalized()
+	var right := global_transform.basis.x.normalized()
+
+	var v_forward := velocity.dot(forward)
+	var v_right := velocity.dot(right)
+
+	var target_rot_x := 0.0
+	var target_rot_z := 0.0
+
+	if absf(v_forward) > absf(v_right):
+		if v_forward > 0.0:
+			target_rot_x = deg_to_rad(-85.0)  # forward
+		else:
+			target_rot_x = deg_to_rad(85.0)  # backward
+	else:
+		if v_right > 0.0:
+			target_rot_z = deg_to_rad(85.0)  # right
+		else:
+			target_rot_z = deg_to_rad(-85.0)  # left
+
+	var tween := create_tween().set_parallel(true)
+	tween.tween_property(_rig, "rotation:x", target_rot_x, 0.35)
+	tween.tween_property(_rig, "rotation:z", target_rot_z, 0.35)
 
 
 func _die() -> void:
 	_dead = true
-	var tween := create_tween()
-	tween.tween_property(_rig, "rotation:z", deg_to_rad(88.0), 0.4)
+	_died_toppled = true
+	_topple_rig()
 	if respawn_delay > 0.0:
+		var tween := create_tween()
 		tween.tween_interval(respawn_delay)
 		tween.tween_callback(_respawn)
 
@@ -161,6 +237,7 @@ func _die() -> void:
 func _respawn() -> void:
 	_hp.revive()
 	_dead = false
+	_died_toppled = false
 	_fear = 0.0
 	_rig.rotation = Vector3.ZERO
 	global_position = _home
@@ -170,7 +247,32 @@ func _respawn() -> void:
 
 func _pick_new_target() -> void:
 	_state = NpcBrain.State.WANDER
-	_target = NpcBrain.wander_target(_home, wander_radius, _rng.randf(), _rng.randf())
+	var parent_node := get_parent()
+	var nav_grid: NavGrid = null
+	if parent_node != null and "nav" in parent_node:
+		nav_grid = parent_node.nav
+
+	var candidate := Vector3.ZERO
+	var found := false
+	if nav_grid != null:
+		for attempt in 10:
+			candidate = NpcBrain.wander_target(_home, wander_radius, _rng.randf(), _rng.randf())
+			var cell := nav_grid.world_to_cell(candidate)
+			if not nav_grid.is_blocked(cell.x, cell.y):
+				var p := nav_grid.find_path(global_position, candidate)
+				if not p.is_empty():
+					_ped_path = PathSmoother.simplify_world(nav_grid, p)
+					_ped_path_index = 0
+					if _ped_path.size() > 0:
+						_target = _ped_path[_ped_path_index]
+						found = true
+						break
+
+	if not found:
+		candidate = NpcBrain.wander_target(_home, wander_radius, _rng.randf(), _rng.randf())
+		_ped_path = PackedVector3Array([candidate])
+		_ped_path_index = 0
+		_target = candidate
 
 
 func _nearest_player() -> Node3D:

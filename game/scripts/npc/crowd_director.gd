@@ -64,7 +64,7 @@ extends Node3D
 ## missing or sits above max_walkable_rise (a building, a wall, water with no
 ## floor) is marked blocked. Gives peds a real navmesh of the streets with zero
 ## coupling to how the world was built. Leave off for a flat sandbox.
-@export var bake_nav: bool = false
+@export var bake_nav: bool = true
 @export var nav_cell_size: float = 2.0
 ## Half-extent (m) of the baked grid around the player's start position.
 @export var nav_radius: float = 90.0
@@ -97,12 +97,16 @@ func apply_graphics_setting(quality: int) -> void:
 	if _base_target_count == -1:
 		_base_target_count = target_count
 	match quality:
-		0:
-			target_count = maxi(1, int(_base_target_count * 0.25))
-		1:
+		0:  # Very Low
+			target_count = maxi(1, int(_base_target_count * 0.15))
+		1:  # Low
+			target_count = maxi(1, int(_base_target_count * 0.35))
+		2:  # Medium
 			target_count = maxi(1, int(_base_target_count * 0.6))
-		2:
+		3:  # High
 			target_count = _base_target_count
+		4:  # Ultra
+			target_count = int(_base_target_count * 1.4)
 
 
 func _physics_process(delta: float) -> void:

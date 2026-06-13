@@ -76,11 +76,14 @@ var _phone_ui: Phone = null
 var _interact_prompt: InteractPrompt = null
 var _was_on_floor: bool = true
 var _oxygen: float = 1.0
-# Per-physics-frame group probes (water overlap, ladder overlap, damage sink)
-# read these caches instead of re-scanning the SceneTree groups every frame.
 var _water_cache: GroupCache = null
 var _ladder_cache: GroupCache = null
 var _health_cache: GroupCache = null
+var _touch_controls: TouchControls = null
+var _controller: ControllerManager = null
+
+var _died_toppled: bool = false
+var _knockback_timer: float = 0.0
 
 @onready var _camera_rig: OrbitCamera = $CameraRig
 @onready var _rig: AnimatedRig = $Rig
@@ -88,14 +91,10 @@ var _health_cache: GroupCache = null
 
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	# Footstep audio is created in code (not the scene) so it stays self-
-	# contained and doesn't collide with parallel edits to player.tscn.
 	var footstep_audio := FootstepAudio.new()
 	add_child(footstep_audio)
 	footstep.connect(footstep_audio.on_footstep)
 	_rig.foot_planted.connect(_on_foot_planted)
-	# The phone (UI + its own input + holding pose) is likewise code-spawned so
-	# the feature is self-contained and doesn't touch player.tscn.
 	_phone_ui = Phone.new()
 	add_child(_phone_ui)
 	_phone_ui.active_changed.connect(_on_phone_active)
@@ -103,16 +102,25 @@ func _ready() -> void:
 	_water_cache = GroupCache.for_group(get_tree(), "water")
 	_ladder_cache = GroupCache.for_group(get_tree(), "ladders")
 	_health_cache = GroupCache.for_group(get_tree(), "player_health")
-	# The interact-prompt overlay is likewise code-spawned so the feature stays
-	# self-contained and doesn't touch player.tscn.
 	_interact_prompt = InteractPrompt.new()
 	add_child(_interact_prompt)
+	# Touch controls: auto-detect mobile and respect user settings.
+	_touch_controls = TouchControls.new()
+	_touch_controls.name = "TouchControls"
+	add_child(_touch_controls)
+	_touch_controls.camera_look_delta.connect(_on_touch_look)
+	var settings := SettingsPanel.load_settings()
+	_touch_controls.set_enabled(settings.get("touch", false))
+	# Controller manager: singleton-like child on the player.
+	_controller = ControllerManager.new()
+	_controller.name = "ControllerManager"
+	add_child(_controller)
+	if _controller.is_controller_connected():
+		vibrate_on_spawn()
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("ui_cancel"):
-		_toggle_mouse_capture()
-	elif event.is_action_pressed("interact") and not _on_phone():
+	if event.is_action_pressed("interact") and not _on_phone():
 		if not _toggle_vehicle():
 			_try_interact()
 
@@ -152,6 +160,25 @@ func _nearest_pedestrian(max_range: float) -> Node3D:
 
 func _physics_process(delta: float) -> void:
 	_update_interact_prompt()
+
+	if _is_dead():
+		if not _died_toppled:
+			_died_toppled = true
+			_topple_rig()
+		velocity.x = 0.0
+		velocity.z = 0.0
+		if not is_on_floor():
+			velocity += get_gravity() * delta
+		move_and_slide()
+		return
+
+	if _died_toppled:
+		_died_toppled = false
+		_reset_rig_topple()
+
+	if _knockback_timer > 0.0:
+		_knockback_timer -= delta
+
 	if _vehicle != null:
 		global_position = _vehicle.global_position
 		# Keep feeding the rig (grounded, no motion) while driving: its
@@ -165,7 +192,9 @@ func _physics_process(delta: float) -> void:
 	if _update_swimming(delta):
 		return
 
-	var input_dir := _move_input()
+	var input_dir := Vector2.ZERO
+	if _knockback_timer <= 0.0:
+		input_dir = _move_input()
 	var direction := PlayerMotion.direction_from_input(input_dir, _camera_rig.gameplay_yaw())
 
 	if _is_on_ladder(delta) and (input_dir.y < 0.0 or not is_on_floor()):
@@ -176,18 +205,31 @@ func _physics_process(delta: float) -> void:
 
 	if not is_on_floor():
 		velocity += get_gravity() * delta
-	if PlayerMotion.should_jump(
-		_time_since_grounded, coyote_time, _time_since_jump_pressed, jump_buffer_time, _jump_spent
+	if (
+		_knockback_timer <= 0.0
+		and PlayerMotion.should_jump(
+			_time_since_grounded,
+			coyote_time,
+			_time_since_jump_pressed,
+			jump_buffer_time,
+			_jump_spent
+		)
 	):
 		velocity.y = jump_velocity
 		_jump_spent = true
 		_time_since_jump_pressed = jump_buffer_time + 1.0
 
-	var sprinting := Input.is_action_pressed("sprint") and not _on_phone()
+	var sprinting := (
+		_knockback_timer <= 0.0 and Input.is_action_pressed("sprint") and not _on_phone()
+	)
 	var speed := sprint_speed if sprinting else walk_speed
 	var target := PlayerMotion.horizontal_velocity(direction, speed)
 	var rate := PlayerMotion.acceleration_rate(
-		not input_dir.is_zero_approx(), is_on_floor(), acceleration, deceleration, air_control
+		not input_dir.is_zero_approx() and _knockback_timer <= 0.0,
+		is_on_floor(),
+		acceleration,
+		deceleration,
+		air_control
 	)
 	velocity = PlayerMotion.accelerated(velocity, target, rate, delta)
 	if is_on_floor():
@@ -197,6 +239,7 @@ func _physics_process(delta: float) -> void:
 		)
 	var impact_speed := maxf(-velocity.y, 0.0)
 	move_and_slide()
+	_check_vehicle_impact()
 	_drive_rig(delta, false)
 	_update_landing(impact_speed)
 
@@ -205,9 +248,11 @@ func _physics_process(delta: float) -> void:
 ## left stick (the harder-pushed source wins). Shared by walking and swimming.
 func _move_input() -> Vector2:
 	var keys := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
-	var stick := Vector2(
-		Input.get_joy_axis(0, JOY_AXIS_LEFT_X), Input.get_joy_axis(0, JOY_AXIS_LEFT_Y)
-	)
+	var stick := Vector2.ZERO
+	if _controller != null and _controller.is_enabled():
+		stick = Vector2(
+			Input.get_joy_axis(0, JOY_AXIS_LEFT_X), Input.get_joy_axis(0, JOY_AXIS_LEFT_Y)
+		)
 	return StickInput.movement(keys, stick, move_stick_deadzone, move_stick_exponent)
 
 
@@ -436,3 +481,92 @@ func _toggle_mouse_capture() -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	else:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+
+func _on_touch_look(delta: Vector2) -> void:
+	if _camera_rig != null:
+		# Scale touch look by the camera's sensitivity setting.
+		# A scale factor of 6.0 aligns baseline feel with mouse look.
+		var sens := _camera_rig.sensitivity * 6.0
+		_camera_rig.rotation.y -= delta.x * sens
+		_camera_rig._pitch = clampf(
+			_camera_rig._pitch - delta.y * sens, OrbitCamera.PITCH_MIN, OrbitCamera.PITCH_MAX
+		)
+
+
+func vibrate_on_spawn() -> void:
+	if _controller != null:
+		_controller.vibrate_active(0.15, 0.25, 0.3)
+
+
+func vibrate_drive() -> void:
+	if _controller != null:
+		_controller.vibrate_active(0.05, 0.08, 0.15)
+
+
+func vibrate_impact(force: float) -> void:
+	if _controller != null:
+		var intensity := clampf(force / 20.0, 0.0, 1.0)
+		_controller.vibrate_active(intensity * 0.3, intensity * 0.6, 0.2)
+
+
+func _is_dead() -> bool:
+	for health in _health_cache.nodes(0.0):
+		if health.has_method("is_dead"):
+			return health.is_dead()
+	return false
+
+
+func _check_vehicle_impact() -> void:
+	if _is_dead():
+		return
+	for i in get_slide_collision_count():
+		var col := get_slide_collision(i)
+		var collider := col.get_collider()
+		if collider != null and (collider.is_in_group("vehicles") or collider is VehicleBody3D):
+			var vel: Vector3 = Vector3.ZERO
+			if "linear_velocity" in collider:
+				vel = collider.linear_velocity
+			elif "velocity" in collider:
+				vel = collider.velocity
+
+			var speed := vel.length()
+			if speed > 2.5:
+				var impact_dir := vel.normalized()
+				velocity = impact_dir * speed * 1.2 + Vector3.UP * (speed * 0.45)
+				_knockback_timer = 0.8
+				var damage := speed * 3.5
+				_hurt(damage)
+				break
+
+
+func _topple_rig() -> void:
+	var forward := -global_transform.basis.z.normalized()
+	var right := global_transform.basis.x.normalized()
+
+	var v_forward := velocity.dot(forward)
+	var v_right := velocity.dot(right)
+
+	var target_rot_x := 0.0
+	var target_rot_z := 0.0
+
+	if absf(v_forward) > absf(v_right):
+		if v_forward > 0.0:
+			target_rot_x = deg_to_rad(-85.0)  # forward
+		else:
+			target_rot_x = deg_to_rad(85.0)  # backward
+	else:
+		if v_right > 0.0:
+			target_rot_z = deg_to_rad(85.0)  # right
+		else:
+			target_rot_z = deg_to_rad(-85.0)  # left
+
+	var tween := create_tween().set_parallel(true)
+	tween.tween_property(_rig, "rotation:x", target_rot_x, 0.35)
+	tween.tween_property(_rig, "rotation:z", target_rot_z, 0.35)
+
+
+func _reset_rig_topple() -> void:
+	var tween := create_tween().set_parallel(true)
+	tween.tween_property(_rig, "rotation:x", 0.0, 0.1)
+	tween.tween_property(_rig, "rotation:z", 0.0, 0.1)

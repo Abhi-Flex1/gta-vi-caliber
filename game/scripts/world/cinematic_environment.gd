@@ -21,7 +21,7 @@ extends RefCounted
 
 ## GPU-budget tiers, cheapest → richest. Each tier is a superset of the one
 ## below it (see apply_quality). Ordering matters — code compares with `>=`.
-enum Quality { LOW, MEDIUM, HIGH, ULTRA }
+enum Quality { VERY_LOW, LOW, MEDIUM, HIGH, ULTRA }
 
 
 ## Apply the premium grade/AO/reflections/bloom/fog to an existing Environment,
@@ -137,22 +137,16 @@ static func apply_quality(env: Environment, tier: int = Quality.MEDIUM) -> Envir
 	var authored_adjustment_saturation := env.adjustment_saturation
 	var authored_adjustment_brightness := env.adjustment_brightness
 	var authored_fog_color := env.fog_light_color
-	# Captured before any write: assigning fog_mode below resets fog_density
-	# to 1.0 inside the engine setter (even re-assigning the current mode), so
-	# reading env.fog_density after it preserves the clobber, not the author.
 	var authored_fog_density := env.fog_density
 	var authored_fog_aerial_perspective := env.fog_aerial_perspective
 	var authored_volumetric_albedo := env.volumetric_fog_albedo
 	var authored_volumetric_density := env.volumetric_fog_density
 	var authored_volumetric_emission := env.volumetric_fog_emission
-	# Preserve authored performance-sensitive settings so the scene file can
-	# set conservative defaults (e.g. lower ssr_max_steps) without being
-	# clobbered by the tier-gated apply.
 	var authored_ssr_max_steps := env.ssr_max_steps
 	var authored_glow_intensity := env.glow_intensity
 	var authored_glow_bloom := env.glow_bloom
 
-	# --- always-on, ~free: image-based ambient + filmic grade + bloom --------
+	# --- always-on: image-based ambient + filmic grade + bloom --------
 	if env.background_mode == Environment.BG_CLEAR_COLOR:
 		env.background_mode = Environment.BG_SKY
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
@@ -169,7 +163,15 @@ static func apply_quality(env: Environment, tier: int = Quality.MEDIUM) -> Envir
 	env.adjustment_contrast = authored_adjustment_contrast if had_adjustment else 1.08
 	env.adjustment_saturation = authored_adjustment_saturation if had_adjustment else 1.14
 	env.adjustment_brightness = authored_adjustment_brightness if had_adjustment else 1.01
-	# Light exponential fog reads as aerial-perspective depth; effectively free.
+
+	# Reset all tier-gated passes for idempotency.
+	env.ssao_enabled = false
+	env.ssil_enabled = false
+	env.ssr_enabled = false
+	env.volumetric_fog_enabled = false
+	env.sdfgi_enabled = false
+
+	# Light exponential fog (always on for aerial perspective).
 	env.fog_enabled = true
 	env.fog_mode = Environment.FOG_MODE_EXPONENTIAL
 	env.fog_light_color = authored_fog_color if had_fog else Color(0.74, 0.79, 0.86)
@@ -179,12 +181,11 @@ static func apply_quality(env: Environment, tier: int = Quality.MEDIUM) -> Envir
 		authored_fog_aerial_perspective if had_fog else maxf(env.fog_aerial_perspective, 0.5)
 	)
 
-	# Reset the tier-gated heavies so apply_quality is idempotent across tiers.
-	env.ssao_enabled = false
-	env.ssil_enabled = false
-	env.ssr_enabled = false
-	env.volumetric_fog_enabled = false
-	env.sdfgi_enabled = false
+	# --- VERY_LOW: minimal fog only, no screen-space effects --------
+	if tier <= Quality.VERY_LOW:
+		env.fog_density = 0.0003
+		env.fog_aerial_perspective = 0.3
+		return env
 
 	# --- MEDIUM+: screen-space contact AO + reflections ---------------------
 	if tier >= Quality.MEDIUM:
@@ -230,6 +231,8 @@ static func apply_quality(env: Environment, tier: int = Quality.MEDIUM) -> Envir
 ## ships SSAO/SSR but holds back the GI pair that tanks FPS on weaker GPUs.
 static func resolved_tier() -> int:
 	match OS.get_environment("GTA_QUALITY").strip_edges().to_lower():
+		"very_low", "potato":
+			return Quality.VERY_LOW
 		"low":
 			return Quality.LOW
 		"medium":
@@ -240,6 +243,8 @@ static func resolved_tier() -> int:
 			return Quality.ULTRA
 	if ProjectSettings.has_setting("rendering/quality_tier"):
 		return clampi(
-			int(ProjectSettings.get_setting("rendering/quality_tier")), Quality.LOW, Quality.ULTRA
+			int(ProjectSettings.get_setting("rendering/quality_tier")),
+			Quality.VERY_LOW,
+			Quality.ULTRA
 		)
 	return Quality.MEDIUM

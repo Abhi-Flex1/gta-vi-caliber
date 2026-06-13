@@ -31,7 +31,7 @@ extends Node3D
 ## scheme as CrowdDirector): raycast a coarse grid from above the rooflines and
 ## block cells that hit a building/wall or no ground. Off → assign `nav` yourself
 ## (e.g. share a CrowdDirector's grid) or leave null for straight-line cruising.
-@export var bake_nav: bool = false
+@export var bake_nav: bool = true
 @export var nav_cell_size: float = 3.0
 @export var nav_radius: float = 110.0
 @export var nav_probe_height: float = 400.0
@@ -66,6 +66,10 @@ func apply_graphics_setting(quality: int) -> void:
 			target_count = maxi(1, int(_base_target_count * 0.6))
 		2:
 			target_count = _base_target_count
+		3:
+			target_count = _base_target_count
+		4:
+			target_count = int(_base_target_count * 1.3)
 
 
 func _physics_process(delta: float) -> void:
