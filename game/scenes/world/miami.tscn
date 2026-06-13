@@ -1,4 +1,4 @@
-[gd_scene load_steps=52 format=3]
+[gd_scene load_steps=58 format=3]
 
 ; Miami / Vice City — THE game map. The streamer pages real Miami districts
 ; (downtown, Brickell, South Beach, Mid-Beach, Wynwood) from the manifest at
@@ -51,12 +51,20 @@
 [ext_resource type="Script" path="res://scripts/world/night_lights_switch.gd" id="45_nightlights"]
 [ext_resource type="Script" path="res://scripts/world/coastal_prop_placements.gd" id="40_coastal_props"]
 [ext_resource type="PackedScene" path="res://scenes/ui/pause_menu.tscn" id="46_pause"]
+[ext_resource type="Script" path="res://scripts/world/vehicle_mod_garage.gd" id="46_modgarage"]
+[ext_resource type="Script" path="res://scripts/systems/market_event_coordinator.gd" id="47_marketevt"]
+[ext_resource type="Script" path="res://scripts/systems/crime_reaction_director.gd" id="48_crimereact"]
+[ext_resource type="Script" path="res://scripts/systems/ambient_event_director.gd" id="49_ambient"]
+[ext_resource type="Script" path="res://scripts/world/contraband_dealer.gd" id="50_contraband"]
 
 [sub_resource type="BoxShape3D" id="payspray_shape"]
 size = Vector3(12, 6, 12)
 
 [sub_resource type="BoxShape3D" id="property_zone_shape"]
 size = Vector3(8, 6, 8)
+
+[sub_resource type="BoxShape3D" id="mod_garage_shape"]
+size = Vector3(14, 6, 14)
 
 [sub_resource type="SphereShape3D" id="trigger_shape"]
 radius = 6.0
@@ -102,7 +110,7 @@ ssr_enabled = true
 ssr_max_steps = 24
 ssao_enabled = true
 ssao_intensity = 1.8
-ssil_enabled = true
+ssil_enabled = false
 glow_enabled = true
 glow_intensity = 0.58
 glow_strength = 0.76
@@ -115,7 +123,7 @@ fog_density = 0.00012
 fog_sky_affect = 0.0
 fog_aerial_perspective = 0.12
 volumetric_fog_enabled = true
-volumetric_fog_density = 0.003
+volumetric_fog_density = 0.0012
 volumetric_fog_albedo = Color(1.0, 0.86, 0.72, 1.0)
 volumetric_fog_emission = Color(0.4, 0.28, 0.3, 1.0)
 volumetric_fog_emission_energy = 0.3
@@ -338,6 +346,15 @@ script = ExtResource("28_progress")
 [node name="StatsCoordinator" type="Node" parent="."]
 script = ExtResource("29_stats")
 
+[node name="MarketEventCoordinator" type="Node" parent="."]
+script = ExtResource("47_marketevt")
+
+[node name="CrimeReactionDirector" type="Node" parent="."]
+script = ExtResource("48_crimereact")
+
+[node name="AmbientEventDirector" type="Node" parent="."]
+script = ExtResource("49_ambient")
+
 [node name="MissionCampaign" type="Node" parent="."]
 script = ExtResource("30_campaign")
 
@@ -370,6 +387,28 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 1, 44)
 script = ExtResource("37_armorshop")
 
 [node name="ArmorShopShape" type="CollisionShape3D" parent="ArmorShop"]
+shape = SubResource("property_zone_shape")
+
+[node name="VehicleModGarage" type="Area3D" parent="." groups=["vehicle_mod_shop"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -62, 1, 44)
+script = ExtResource("46_modgarage")
+
+[node name="ModGarageShape" type="CollisionShape3D" parent="VehicleModGarage"]
+shape = SubResource("mod_garage_shape")
+
+[node name="ContrabandDealer" type="Node3D" parent="." groups=["contraband_dealer"]]
+script = ExtResource("50_contraband")
+
+[node name="DealZone" type="Area3D" parent="ContrabandDealer"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -30, 1, 30)
+
+[node name="DealShape" type="CollisionShape3D" parent="ContrabandDealer/DealZone"]
+shape = SubResource("property_zone_shape")
+
+[node name="FenceZone" type="Area3D" parent="ContrabandDealer"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 1, 56)
+
+[node name="FenceShape" type="CollisionShape3D" parent="ContrabandDealer/FenceZone"]
 shape = SubResource("property_zone_shape")
 
 [node name="WantedEvasion" type="Node" parent="."]

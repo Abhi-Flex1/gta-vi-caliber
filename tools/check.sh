@@ -133,8 +133,12 @@ step "miami evade probe"
 "$GODOT_BIN" --headless --path game --script res://tests/miami_evade_probe.gd
 step "miami property probe"
 "$GODOT_BIN" --headless --path game --script res://tests/miami_property_probe.gd
+step "miami vehicle mod probe"
+"$GODOT_BIN" --headless --path game --script res://tests/miami_vehicle_mod_probe.gd
 step "miami citizen probe"
 "$GODOT_BIN" --headless --path game --script res://tests/miami_citizen_probe.gd
+step "contraband market probe"
+"$GODOT_BIN" --headless --path game --script res://tests/contraband_market_probe.gd
 
 # --- 7. systems wiring probes (scene-free: self-wiring nodes in a mock tree) --
 step "market event probe"
