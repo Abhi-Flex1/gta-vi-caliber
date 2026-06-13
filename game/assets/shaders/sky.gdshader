@@ -37,6 +37,10 @@ uniform vec3 sun_disk_color : source_color = vec3(1.0, 0.95, 0.86);
 
 // --- clouds -------------------------------------------------------------------
 uniform float cloud_coverage : hint_range(0.0, 1.0) = 0.46;
+// Storm weight from the WeatherController (WeatherState.sky_storm_darkness):
+// darkens the cloud deck toward charcoal, mutes the sun disk and dims the
+// whole vault as a front builds. 0 = fair weather.
+uniform float storm_darkness : hint_range(0.0, 1.0) = 0.0;
 uniform float cloud_density : hint_range(0.0, 4.0) = 1.3;
 uniform float cloud_height = 1200.0;
 uniform float cloud_scale = 0.00055;
@@ -217,6 +221,10 @@ vec4 clouds(vec3 view, vec3 sun, float day) {
 	col = mix(col, col * vec3(1.15, 0.86, 0.62), warm * lit * day);
 	col = mix(col * vec3(0.22, 0.27, 0.42), col, day);
 
+	// Storm deck: drag the whole layer toward flat charcoal — lit flanks lose
+	// their shine first, so a building front reads heavy before rain falls.
+	col = mix(col, col * vec3(0.34, 0.36, 0.40), storm_darkness);
+
 	col = min(max(col, vec3(0.0)), vec3(4.0));
 	return vec4(col, density);
 }
@@ -260,6 +268,9 @@ void sky() {
 	float moon_glow = pow(max(md, 0.0), 1200.0) * 0.4 + pow(max(md, 0.0), 60.0) * 0.04;
 	sky_col += (moon_color * moon_disk + moon_color * moon_glow) * night_amount;
 
+	// Overcast dims the whole vault, not just the cloud pixels.
+	sky_col *= mix(1.0, 0.55, storm_darkness);
+
 	// --- sun disk -------------------------------------------------------------
 	float cos_size = cos(radians(sun_angular_size));
 	float sd = dot(view, sun);
@@ -268,7 +279,9 @@ void sky() {
 	float edge = clamp((sd - cos_size) / max(1.0 - cos_size, 1e-4), 0.0, 1.0);
 	float limb = mix(0.55, 1.0, sqrt(edge));
 	float above = smoothstep(-0.04, 0.06, sun.y); // fade the disk out below horizon
-	sky_col += sun_disk_color * disk * limb * sun_intensity * 1.3 * above * day;
+	// A storm deck swallows the disk — only a pale smear survives full overcast.
+	float deck = 1.0 - 0.9 * storm_darkness;
+	sky_col += sun_disk_color * disk * limb * sun_intensity * 1.3 * above * day * deck;
 
 	// --- clouds ---------------------------------------------------------------
 	vec4 cl = clouds(view, sun, day);

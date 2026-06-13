@@ -880,8 +880,10 @@ func _make_materials() -> void:
 	_building_mat = _shader_or_fallback("res://shaders/facade.gdshader", Color(0.62, 0.63, 0.66))
 	_road_mat = _shader_or_fallback("res://shaders/road.gdshader", Color(0.33, 0.32, 0.31))
 	_sidewalk_mat = _shader_or_fallback("res://shaders/sidewalk.gdshader", Color(0.62, 0.60, 0.56))
-	# Photoreal asphalt grain from the Codex-generated tileable albedo.
+	# Photoreal grain from the Codex-generated tileable albedos: asphalt on the
+	# roads, troweled stucco breaking up the masonry facade fills.
 	_set_detail_texture(_road_mat, "res://assets/textures/asphalt_albedo.png")
+	_set_detail_texture(_building_mat, "res://assets/textures/stucco_albedo.png")
 
 	_facade_glass_mat = StandardMaterial3D.new()
 	_facade_glass_mat.albedo_color = Color(0.045, 0.065, 0.085, 0.92)

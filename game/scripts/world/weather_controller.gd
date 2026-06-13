@@ -97,6 +97,16 @@ func _apply_clouds() -> void:
 	_sky_material.set_shader_parameter(
 		"cloud_coverage", WeatherState.sky_cloud_coverage(_state.cloudiness)
 	)
+	_sky_material.set_shader_parameter(
+		"storm_darkness", WeatherState.sky_storm_darkness(_state.cloudiness)
+	)
+
+
+## Key-light energy scale for the sky layer (1 clear .. ~0.35 full storm).
+## SkyController multiplies its SkyModel sun/moon energy by this, so weather
+## and the day/night cycle compose instead of fighting over the light.
+func sun_dim_factor() -> float:
+	return WeatherState.sun_dim_factor(_state.cloudiness)
 
 
 func _apply_rain() -> void:
