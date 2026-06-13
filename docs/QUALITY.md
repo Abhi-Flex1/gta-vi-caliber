@@ -5,6 +5,21 @@ bar (trailer-fidelity coastal open world). Updated by whoever runs a
 playtest/capture pass; newest entry first. Captures referenced live in
 `/tmp/gta6_playtest/` locally — judge from a fresh run, not memory.
 
+## 2026-06-12 (cont. 20) — pinned the exact night blocker (for the env owner)
+
+Probed why the night work doesn't show in-game and pinned it precisely (details
+in LOOP_HANDOFF day/night offer): miami's fixed dusk is enforced by THREE static
+WorldEnvironment pieces, none on a clock — the Sun (SkyController handles it),
+the **ProceduralSkyMaterial** (which SkyController does NOT drive — it drives
+sky.gdshader, unused here), and the **orange fog** (`fog_light_color`, which
+dominates far shots and is the real reason captures read solid orange). A real
+day/night must drive all three. Also confirmed I can't verify a lighting change
+via headless capture here (dense paged scene + fog + FloatingOrigin defeat
+framing — every night attempt came back orange), so this is firmly an in-editor
+task for the env owner. Did NOT ship a blind day/night driver I couldn't verify;
+recorded the diagnosis instead so the owner can do it in minutes. No new content
+this iteration — the honest, useful move was the diagnosis.
+
 ## 2026-06-12 (cont. 19) — day/night offer + blimp nav lights
 
 Two honest moves, not another prop. (1) Left a concrete **offer in LOOP_HANDOFF**

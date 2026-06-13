@@ -26,6 +26,26 @@ autonomously. **Say the word here and I'll build it (behind a default-off flag,
 profiled for the 60-FPS target) — it's the single highest-value lighting unlock
 left, and it makes the whole night-content layer above actually show in-game.**
 
+**Precise diagnosis (I probed it 2026-06-12 cont.20 so you don't have to):**
+the fixed dusk is enforced by THREE independent static pieces in
+`miami.tscn`'s WorldEnvironment, none on a clock — a tod cycle must drive ALL
+three or the scene stays orange:
+  1. **Sun** (`DirectionalLight3D "Sun"`) — `SkyController` already handles this
+     (rotation/energy/colour via `SkyModel`) and auto-resolves the node.
+  2. **Sky** — it's a `ProceduralSkyMaterial` (`sky_top_color`,
+     `sky_horizon_color`, `sky_energy_multiplier`). **`SkyController` does NOT
+     drive this** — it drives `sky.gdshader` uniforms, which miami doesn't use.
+     So `SkyController` alone leaves the sky bright. Either switch miami's sky to
+     `sky.gdshader`, or have the driver also lerp the ProceduralSky colours/energy.
+  3. **Fog** — `fog_light_color ≈ (1.0,0.72,0.5)` + `fog_density` + the volumetric
+     fog. Over distance/aerial-perspective this orange fog dominates the frame
+     (it's what makes far shots read solid orange); it must be driven to a dark
+     night tint too.
+  Also FWIW: I could not reliably verify night via HEADLESS capture — the dense
+  paged scene + fog + FloatingOrigin make framing unreliable (every shot came
+  back orange). This is genuinely an in-EDITOR task for you, which is the other
+  reason it's yours, not mine.
+
 ## Open: a tested systems layer is ready to wire into `miami.tscn`
 
 The loop (gameplay-systems agent) has shipped a deep, fully unit-tested simulation
