@@ -1,4 +1,4 @@
-[gd_scene load_steps=54 format=3]
+[gd_scene load_steps=57 format=3]
 
 ; Miami / Vice City — THE game map. The streamer pages real Miami districts
 ; (downtown, Brickell, South Beach, Mid-Beach, Wynwood) from the manifest at
@@ -51,6 +51,9 @@
 [ext_resource type="Script" path="res://scripts/world/night_lights_switch.gd" id="45_nightlights"]
 [ext_resource type="Script" path="res://scripts/world/coastal_prop_placements.gd" id="40_coastal_props"]
 [ext_resource type="Script" path="res://scripts/world/vehicle_mod_garage.gd" id="46_modgarage"]
+[ext_resource type="Script" path="res://scripts/systems/market_event_coordinator.gd" id="47_marketevt"]
+[ext_resource type="Script" path="res://scripts/systems/crime_reaction_director.gd" id="48_crimereact"]
+[ext_resource type="Script" path="res://scripts/systems/ambient_event_director.gd" id="49_ambient"]
 
 [sub_resource type="BoxShape3D" id="payspray_shape"]
 size = Vector3(12, 6, 12)
@@ -338,6 +341,15 @@ script = ExtResource("28_progress")
 
 [node name="StatsCoordinator" type="Node" parent="."]
 script = ExtResource("29_stats")
+
+[node name="MarketEventCoordinator" type="Node" parent="."]
+script = ExtResource("47_marketevt")
+
+[node name="CrimeReactionDirector" type="Node" parent="."]
+script = ExtResource("48_crimereact")
+
+[node name="AmbientEventDirector" type="Node" parent="."]
+script = ExtResource("49_ambient")
 
 [node name="MissionCampaign" type="Node" parent="."]
 script = ExtResource("30_campaign")

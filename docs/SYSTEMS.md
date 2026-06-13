@@ -127,25 +127,30 @@ the busted/arrest fail-loop (`miami_arrest_probe`). `WantedEvasionController`,
 `PaySprayShop`, and `SideJobBoard` are the self-wiring coordinators already in the
 scene — copy their shape to wire the rest.
 
-`MarketEventCoordinator` is a ready-to-drop self-wiring node (cf. PaySprayShop):
-it owns a `StockMarket`, subscribes to the `wanted` group's `stars_changed` to
-rally defense stocks on a crime spree, and applies `HitContract` effects via
-`apply_hit_effect`. Its node-level wiring is CI-gated headless by
-`tests/market_event_probe.gd` (a mock tree, no scene file). Adding it to
-`miami.tscn` is the remaining step to make the stock-market loop live in play.
+`MarketEventCoordinator` is **wired live in `miami.tscn`** (self-wiring node, cf.
+PaySprayShop): it owns a `StockMarket`, subscribes to the `wanted` group's
+`stars_changed` to rally defense stocks on a crime spree, and applies
+`HitContract` effects via `apply_hit_effect`. Node logic is CI-gated headless by
+`tests/market_event_probe.gd` (a mock tree); the live in-scene connection is
+asserted by `tests/miami_wiring_probe.gd`. Remaining to surface to the player: a
+brokerage/ticker UI reading its public `market`.
 
-`CrimeReactionDirector` is its sibling on the same `wanted` hook: it owns a
-`NewsBulletin` + `DistrictEconomy` and, on a wanted spike, files a severity-scaled
-headline and heats the active district (which cools over time via `_process`). The
-two directors split the signal cleanly — market vs news+real-estate — so both can
-sit in the scene. CI-gated headless by `tests/crime_reaction_probe.gd`.
+`CrimeReactionDirector` is its sibling on the same `wanted` hook and is **wired
+live in `miami.tscn`** too: it owns a `NewsBulletin` + `DistrictEconomy` and, on a
+wanted spike, files a severity-scaled headline and heats the active district
+(which cools over time via `_process`). The two directors split the signal cleanly
+— market vs news+real-estate. Node logic CI-gated by `tests/crime_reaction_probe.gd`;
+live connection asserted by `tests/miami_wiring_probe.gd`. Remaining: drain
+`news.next_bulletin()` into a radio NEWS slot.
 
 `CharacterSwitcher` owns a `CharacterRoster` and syncs each lead's wallet through
 the live `player_stats` node on `request_switch()` (write the current wallet back,
 load the incoming lead's), so per-character money persists across switches. CI-gated
 headless by `tests/character_switch_probe.gd`.
 
-`AmbientEventDirector` drives `AmbientEvents` on a timer: each tick it builds
+`AmbientEventDirector` is **wired live in `miami.tscn`**: on a timer it builds
 `{stars (from the wanted group), district}`, rolls `trigger_next`, and emits
-`encounter_triggered(id, kind)` for the scene to spawn. CI-gated headless by
-`tests/ambient_event_probe.gd`.
+`encounter_triggered(id, kind)`. Node logic CI-gated headless by
+`tests/ambient_event_probe.gd`; live in-scene connection asserted by
+`tests/miami_wiring_probe.gd`. Remaining to make encounters appear: connect
+`encounter_triggered` to scene spawn logic (mugging/race/heist actors).
