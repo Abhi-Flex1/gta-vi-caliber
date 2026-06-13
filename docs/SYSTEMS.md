@@ -102,6 +102,7 @@ Groups the live scene already publishes: `player`, `player_health`,
 | `GpsNavigation` | route progress/ETA/next-turn | `distance_remaining`, `progress`, `next_turn`, `has_arrived` | feed a NavGrid route into the minimap GPS line |
 | `RadioScheduler` | song/DJ/ad/news programming | `next_segment`, `pick_song`, `advance` | program a `VehicleRadio` station |
 | `NewsBulletin` | player deeds -> reactive radio/TV headlines | `report`, `next_bulletin`, `has_pending`, `recent` | `report` on crimes/heists/escapes (severity-tiered); when `RadioScheduler` yields a NEWS segment, read `next_bulletin()` for the anchor line |
+| `ContactServices` | call a contact for a favour (lower-wanted/mechanic/backup) | `request`, `can_use`, `cooldown_remaining`, `is_ready` | the phone UI gates `request` with `PhoneContacts.will_answer`, charges the wallet, and triggers the effect by `kind`; cost + cooldown per service |
 | `SwimStamina` | oxygen/stamina/drowning | `update`, `is_drowning`, `swim_speed`, `drown_damage` | the meter layer above the swim motion node |
 | `LootTable` | weighted seeded drops | `roll`, `roll_many`, `drop_chance_satisfied` | on enemy death / crate smash -> pickups |
 | `CharacterRoster` | dual-protagonist switching + per-lead state | `switch_to`, `can_switch`, `active`, `money_of`, `position_of`, `to_dict` | load the active lead's wallet/wanted/position into PlayerStats + world on `switch_to`; write it back before switching away |
