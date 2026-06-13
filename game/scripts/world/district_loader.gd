@@ -358,6 +358,7 @@ func _build_street_furniture(roads: Array, proj: GeoProjection) -> void:
 				_add_mesh(prop, hydrant_cap, Vector3(0.0, 0.42, 0.0), hydrant_mat)
 			container.add_child(prop)
 			placed += 1
+	LodUtil.apply_range(container, 120.0)
 
 
 func _add_mesh(parent: Node, mesh: Mesh, pos: Vector3, mat: Material) -> void:
@@ -414,6 +415,7 @@ func _build_trees(roads: Array, proj: GeoProjection) -> void:
 			tree.add_child(crown)
 			container.add_child(tree)
 			placed += 1
+	LodUtil.apply_range(container, 300.0)
 
 
 ## Palm-lined avenues — the signature Miami streetscape. Trunks and frond crowns
@@ -623,6 +625,7 @@ func _build_streetlights(roads: Array, proj: GeoProjection) -> void:
 			container.add_child(lamp)
 			placed += 1
 	switch.bind_lights(lights, STREETLIGHT_LIGHT_ENERGY)
+	LodUtil.apply_range(container, 200.0)
 
 
 func _load_district(path: String) -> Dictionary:
